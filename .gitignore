@@ -1,0 +1,66 @@
+# ── Upstream C++ source — not tracked in this repo ─────────────────────
+Your-OWN-AI/
+
+# ── Python ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# editable install metadata
+vectormind_engine.egg-info/
+
+# ── Virtual environments ────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.env
+
+# ── Secrets / credentials — NEVER commit these ──────────────────────────
+.env
+.env.*
+*.env
+secrets.toml
+*.pem
+*.key
+*.crt
+
+# ── Pytest / coverage ───────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ── IDEs ────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ── OS artefacts ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Node / frontend (future tasks) ──────────────────────────────────────
+node_modules/
+dist/
+frontend/dist/
+frontend/.vite/
+
+# ── Docker (future tasks) ───────────────────────────────────────────────
+*.log
+
+# ── Alembic generated SQL (keep migrations, ignore transient files) ──────
+# (nothing to ignore yet; placeholder)
+
+# ── C++ build artefacts (original project) ──────────────────────────────
+Your-OWN-AI/*.exe
+Your-OWN-AI/*.o
+Your-OWN-AI/db
