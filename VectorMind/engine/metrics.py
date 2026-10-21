@@ -19,6 +19,21 @@ import numpy as np
 # Type alias mirroring C++ ``using DistFn`` (main.cpp:33)
 DistFn = Callable[[np.ndarray, np.ndarray], float]
 
+_EPS32 = np.float32(1e-9)   # C++ literal ``1e-9f``
+
+
+def _seq_sum(x: np.ndarray) -> np.float32:
+    """
+    Left-to-right float32 sum, like the C++ ``float s=0; s += ...`` loops.
+
+    ``np.dot``/``np.sum`` use SIMD/pairwise accumulation whose rounding
+    differs from C++ in the last ulps, which can reorder near-ties.
+    ``cumsum`` accumulates strictly sequentially in float32.
+    """
+    if x.size == 0:
+        return np.float32(0.0)
+    return x.cumsum(dtype=np.float32)[-1]
+
 
 def euclidean(a: np.ndarray, b: np.ndarray) -> float:
     """
@@ -38,7 +53,7 @@ def euclidean(a: np.ndarray, b: np.ndarray) -> float:
     a = np.asarray(a, dtype=np.float32)
     b = np.asarray(b, dtype=np.float32)
     diff = a - b
-    return float(np.sqrt(np.dot(diff, diff)))
+    return float(np.sqrt(_seq_sum(diff * diff)))
 
 
 def cosine(a: np.ndarray, b: np.ndarray) -> float:
@@ -61,11 +76,12 @@ def cosine(a: np.ndarray, b: np.ndarray) -> float:
     """
     a = np.asarray(a, dtype=np.float32)
     b = np.asarray(b, dtype=np.float32)
-    na = float(np.dot(a, a))
-    nb = float(np.dot(b, b))
-    if na < 1e-9 or nb < 1e-9:
+    dot = _seq_sum(a * b)
+    na = _seq_sum(a * a)
+    nb = _seq_sum(b * b)
+    if na < _EPS32 or nb < _EPS32:
         return 1.0
-    return float(1.0 - np.dot(a, b) / (np.sqrt(na) * np.sqrt(nb)))
+    return float(np.float32(1.0) - dot / (np.sqrt(na) * np.sqrt(nb)))
 
 
 def manhattan(a: np.ndarray, b: np.ndarray) -> float:
@@ -85,7 +101,7 @@ def manhattan(a: np.ndarray, b: np.ndarray) -> float:
     """
     a = np.asarray(a, dtype=np.float32)
     b = np.asarray(b, dtype=np.float32)
-    return float(np.sum(np.abs(a - b)))
+    return float(_seq_sum(np.abs(a - b)))
 
 
 def get_dist_fn(metric: str) -> DistFn:
@@ -106,3 +122,58 @@ def get_dist_fn(metric: str) -> DistFn:
     if metric == "manhattan":
         return manhattan
     return euclidean
+
+
+# ---------------------------------------------------------------------------
+# Batched distances (one query vs. many rows)
+#
+# Each ``*_batch(q, M)`` returns a float32 array whose element ``i`` is
+# *bit-identical* to ``<metric>(q, M[i])``: element-wise float32 ops are the
+# same, and the per-row sum uses ``cumsum(axis=1)``, which accumulates
+# strictly left-to-right in float32 exactly like the scalar ``_seq_sum``.
+# (Do NOT replace with ``np.sum``/``np.dot``/``@``: pairwise/SIMD summation
+# changes the last ulps and breaks C++ parity.)
+# ---------------------------------------------------------------------------
+
+BatchFn = Callable[[np.ndarray, np.ndarray], np.ndarray]
+
+
+def _row_seq_sum(x: np.ndarray) -> np.ndarray:
+    if x.shape[1] == 0:
+        return np.zeros(x.shape[0], dtype=np.float32)
+    return x.cumsum(axis=1, dtype=np.float32)[:, -1]
+
+
+def euclidean_batch(q: np.ndarray, m: np.ndarray) -> np.ndarray:
+    """Batched :func:`euclidean`; ``m`` has shape ``(n, dims)`` float32."""
+    diff = q - m
+    return np.sqrt(_row_seq_sum(diff * diff))
+
+
+def manhattan_batch(q: np.ndarray, m: np.ndarray) -> np.ndarray:
+    """Batched :func:`manhattan`."""
+    return _row_seq_sum(np.abs(q - m))
+
+
+def cosine_batch(q: np.ndarray, m: np.ndarray) -> np.ndarray:
+    """Batched :func:`cosine` (including the near-zero-norm ``1.0`` guard)."""
+    dot = _row_seq_sum(q * m)
+    na = _seq_sum(q * q)
+    nb = _row_seq_sum(m * m)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = np.float32(1.0) - dot / (np.sqrt(na) * np.sqrt(nb))
+    return np.where((na < _EPS32) | (nb < _EPS32), np.float32(1.0), out).astype(
+        np.float32, copy=False
+    )
+
+
+_BATCH_FNS: dict = {
+    euclidean: euclidean_batch,
+    cosine: cosine_batch,
+    manhattan: manhattan_batch,
+}
+
+
+def get_batch_fn(dist: DistFn) -> BatchFn | None:
+    """Batch equivalent of a built-in metric, or ``None`` for custom functions."""
+    return _BATCH_FNS.get(dist)

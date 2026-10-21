@@ -1,0 +1,246 @@
+{
+  "params": {
+    "n": 500,
+    "dims": 16,
+    "queries": 50,
+    "k": 10,
+    "ef": 50,
+    "seed": 1
+  },
+  "runs": {
+    "uniform/euclidean": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.88277344105351e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.88277344105351e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.88277344105351e-09
+      }
+    },
+    "uniform/cosine": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.823007134351051e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.667333830997425e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.823007134351051e-09
+      }
+    },
+    "uniform/manhattan": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 2.3188639868480227e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 2.3188639868480227e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 2.3188639868480227e-09
+      }
+    },
+    "clustered/euclidean": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.51565738264203e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.51565738264203e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.51565738264203e-09
+      }
+    },
+    "clustered/cosine": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.839009156334642e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.5743072298213984e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.839009156334642e-09
+      }
+    },
+    "clustered/manhattan": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 1.6525982944752989e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 1.6525982944752989e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 1.6525982944752989e-09
+      }
+    },
+    "grid_ties/euclidean": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 2.0313328192773775e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 2.0313328192773775e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 2.0313328192773775e-09
+      }
+    },
+    "grid_ties/cosine": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.126935403339136e-09
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 3.917743792169446e-09
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 4.126935403339136e-09
+      }
+    },
+    "grid_ties/manhattan": {
+      "levels_equal": true,
+      "levels_mismatch": 0,
+      "top_equal": true,
+      "entry_equal": true,
+      "nbr_lists_total": 534,
+      "nbr_lists_mismatch": 0,
+      "bf": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 0.0
+      },
+      "kd": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 0.0
+      },
+      "hnsw": {
+        "queries": 50,
+        "id_list_mismatch": 0,
+        "dist_mismatch": 0,
+        "max_rel_dist_diff": 0.0
+      }
+    }
+  }
+}

@@ -64,3 +64,6 @@ frontend/.vite/
 Your-OWN-AI/*.exe
 Your-OWN-AI/*.o
 Your-OWN-AI/db
+
+# Task 03: compiled C++ reference harness (rebuild per harness.cpp header)
+VectorMind/benchmarks/cpp_reference/*.exe

@@ -10,11 +10,11 @@ Default parameters matching the C++ original (main.cpp:227–229):
     mL         = 1.0 / log(M) ≈ 0.3607
     rng seed   = 42
 
-Deviation D1 (RNG): C++ uses ``std::mt19937(42)``; Python uses
-``random.Random(42)`` (also Mersenne Twister, but different float-
-generation sequence). Level assignments differ for the same seed.
-Graph topology differs from C++ output; search correctness is preserved
-and verified by recall tests. See task01_migration_map.md.
+Deviation D1 (RNG) — RESOLVED in Task 03: level assignment now uses a
+bit-exact emulation of ``std::mt19937(42)`` + libstdc++
+``uniform_real_distribution<float>`` (see ``_mt19937.py``), so levels match
+a g++ build of the original for the same insertion order. Verified against
+the C++ harness in ``benchmarks/`` / ``tests/test_cpp_parity.py``.
 
 Deviation D4 (topLayer on remove): ``_top_layer`` is not updated when the
 highest-layer node is deleted. This matches the C++ original; graceful
@@ -26,13 +26,13 @@ from __future__ import annotations
 
 import heapq
 import math
-import random
 from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
 
-from .metrics import DistFn
+from ._mt19937 import Mt19937
+from .metrics import DistFn, get_batch_fn
 from .models import VectorItem
 
 
@@ -137,8 +137,8 @@ class HNSW:
         self._M: int = m
         self._M0: int = 2 * m           # layer-0 max connections
         self._ef_build: int = ef_build
-        self._mL: float = 1.0 / math.log(m)  # level multiplier
-        self._rng: random.Random = random.Random(seed)
+        self._mL: float = float(np.float32(1.0) / np.log(np.float32(m)))  # float32, as C++
+        self._rng: Mt19937 = Mt19937(seed)
         self._G: dict[int, _Node] = {}
         self._top_layer: int = -1
         self._entry_pt: Optional[int] = None
@@ -153,10 +153,33 @@ class HNSW:
 
             floor(-log(uniform(0,1)) * mL)
         """
-        u = self._rng.random()
-        if u == 0.0:          # guard against log(0)
-            u = 1e-15
-        return int(math.floor(-math.log(u) * self._mL))
+        u = self._rng.uniform_float()
+        # C++ evaluates -log(u) * mL entirely in float32 (u == 0 -> inf, UB
+        # on the int cast in C++; guarded here)
+        if u == 0.0:
+            u = np.float32(1e-15)
+        lvl = np.floor(-np.log(u) * np.float32(self._mL))
+        return int(lvl)
+
+    def _dists(
+        self, q: np.ndarray, ids: list[int], dist: DistFn
+    ) -> list[float]:
+        """
+        Distances from ``q`` to the stored embeddings of ``ids`` (all must
+        exist in the graph), in the same order.
+
+        Built-in metrics use the batched implementation, whose results are
+        bit-identical to per-pair calls (see ``metrics.py``). Custom
+        distance functions fall back to per-pair calls.
+        """
+        G = self._G
+        batch = get_batch_fn(dist) if len(ids) > 1 else None
+        if batch is None:
+            return [dist(q, G[i].item.emb) for i in ids]
+        m = np.stack([G[i].item.emb for i in ids])
+        if m.dtype != np.float32:
+            m = m.astype(np.float32)
+        return batch(np.asarray(q, dtype=np.float32), m).tolist()
 
     def _search_layer(
         self,
@@ -183,8 +206,10 @@ class HNSW:
         d0 = dist(q, self._G[ep].item.emb)
         # cands: min-heap — smallest distance first
         cands: list[tuple[float, int]] = [(d0, ep)]
-        # found: max-heap via negation — largest distance at index 0
-        found: list[tuple[float, int]] = [(-d0, ep)]
+        # found: max-heap on (dist, id) emulated as min-heap of (-dist, -id),
+        # matching C++ priority_queue<pair<float,int>> tie order (largest id
+        # is popped first among equal distances)
+        found: list[tuple[float, int]] = [(-d0, -ep)]
 
         while cands:
             cd, cid = heapq.heappop(cands)
@@ -199,21 +224,27 @@ class HNSW:
             if node is None or lyr >= len(node.nbrs):
                 continue
 
+            # C++ (main.cpp:202): skip visited or missing nodes. Fresh
+            # neighbours are collected first, then their distances computed
+            # in one batch; the per-neighbour processing order is unchanged.
+            fresh: list[int] = []
             for nid in node.nbrs[lyr]:
-                # C++ (main.cpp:202): skip visited or missing nodes
                 if nid in visited or nid not in self._G:
                     continue
                 visited.add(nid)
-                nd = dist(q, self._G[nid].item.emb)
+                fresh.append(nid)
+            if not fresh:
+                continue
+            for nid, nd in zip(fresh, self._dists(q, fresh, dist)):
                 # C++ (main.cpp:205): add if found is not full or improves worst
                 if len(found) < ef or nd < -found[0][0]:
                     heapq.heappush(cands, (nd, nid))
-                    heapq.heappush(found, (-nd, nid))
+                    heapq.heappush(found, (-nd, -nid))
                     if len(found) > ef:
                         heapq.heappop(found)  # remove worst (largest dist)
 
         # Reconstruct and sort ascending — mirrors C++ sort after pop-all
-        result = [(-neg_d, id_) for neg_d, id_ in found]
+        result = [(-neg_d, -neg_id) for neg_d, neg_id in found]
         result.sort()
         return result
 
@@ -298,11 +329,10 @@ class HNSW:
 
                 # C++ (main.cpp:256–264): prune over-connected neighbour
                 if len(conn) > max_m:
-                    ds: list[tuple[float, int]] = [
-                        (dist(nbr_node.item.emb, self._G[c].item.emb), c)
-                        for c in conn
-                        if c in self._G
-                    ]
+                    cs = [c for c in conn if c in self._G]
+                    ds: list[tuple[float, int]] = list(
+                        zip(self._dists(nbr_node.item.emb, cs, dist), cs)
+                    )
                     ds.sort()                           # ascending by (dist, id)
                     nbr_node.nbrs[lc] = [c for _, c in ds[:max_m]]
 

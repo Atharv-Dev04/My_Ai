@@ -1,0 +1,521 @@
+{
+  "hardware": {
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12500H",
+    "os": "Windows-10-10.0.26300-SP0",
+    "python": "3.11.9",
+    "numpy": "2.3.5"
+  },
+  "params": {
+    "reps": 3,
+    "queries": 100,
+    "k": 10,
+    "ef": 50,
+    "cpp_build_repeats": 3
+  },
+  "runs": [
+    {
+      "dataset": "uniform",
+      "n": 1000,
+      "dims": 16,
+      "metric": "euclidean",
+      "cpp_build_s": {
+        "bf": 9.85e-05,
+        "kd": 0.0002029,
+        "hnsw": 0.1162149
+      },
+      "py_build_s": {
+        "bf": 7.12e-05,
+        "kd": 0.0018888,
+        "hnsw": 2.0140358
+      },
+      "cpp_query": {
+        "bf": {
+          "median_us": 37.3,
+          "p95_us": 42.6,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 25.0,
+          "p95_us": 31.8,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 59.85,
+          "p95_us": 78.0,
+          "samples": 300
+        }
+      },
+      "py_query": {
+        "bf": {
+          "median_us": 86.9,
+          "p95_us": 117.2,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 2911.55,
+          "p95_us": 3478.5,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 910.95,
+          "p95_us": 1232.1,
+          "samples": 300
+        }
+      },
+      "py_recall": {
+        "kd": 1.0,
+        "hnsw": 1.0
+      },
+      "cpp_recall": {
+        "kd": 1.0,
+        "hnsw": 1.0
+      },
+      "parity": {
+        "levels_equal": true,
+        "levels_mismatch": 0,
+        "top_equal": true,
+        "entry_equal": true,
+        "nbr_lists_total": 1069,
+        "nbr_lists_mismatch": 0,
+        "bf": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.933284948141069e-09
+        },
+        "kd": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.933284948141069e-09
+        },
+        "hnsw": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.933284948141069e-09
+        }
+      }
+    },
+    {
+      "dataset": "uniform",
+      "n": 1000,
+      "dims": 16,
+      "metric": "cosine",
+      "cpp_build_s": {
+        "bf": 0.0001653,
+        "kd": 0.0002359,
+        "hnsw": 0.129071
+      },
+      "py_build_s": {
+        "bf": 0.0001402,
+        "kd": 0.0021048,
+        "hnsw": 3.1104386
+      },
+      "cpp_query": {
+        "bf": {
+          "median_us": 42.0,
+          "p95_us": 49.4,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 3.85,
+          "p95_us": 6.9,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 60.2,
+          "p95_us": 79.7,
+          "samples": 300
+        }
+      },
+      "py_query": {
+        "bf": {
+          "median_us": 111.95,
+          "p95_us": 133.8,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 418.55,
+          "p95_us": 744.9,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 1282.15,
+          "p95_us": 1439.2,
+          "samples": 300
+        }
+      },
+      "py_recall": {
+        "kd": 0.359,
+        "hnsw": 0.998
+      },
+      "cpp_recall": {
+        "kd": 0.359,
+        "hnsw": 0.998
+      },
+      "parity": {
+        "levels_equal": true,
+        "levels_mismatch": 0,
+        "top_equal": true,
+        "entry_equal": true,
+        "nbr_lists_total": 1069,
+        "nbr_lists_mismatch": 0,
+        "bf": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.875613993067526e-09
+        },
+        "kd": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.635685560242331e-09
+        },
+        "hnsw": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.875613993067526e-09
+        }
+      }
+    },
+    {
+      "dataset": "clustered",
+      "n": 5000,
+      "dims": 16,
+      "metric": "euclidean",
+      "cpp_build_s": {
+        "bf": 0.0005514,
+        "kd": 0.0011289,
+        "hnsw": 0.5601644
+      },
+      "py_build_s": {
+        "bf": 0.0002589,
+        "kd": 0.0130773,
+        "hnsw": 7.73954
+      },
+      "cpp_query": {
+        "bf": {
+          "median_us": 235.05,
+          "p95_us": 247.0,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 26.5,
+          "p95_us": 33.7,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 57.95,
+          "p95_us": 65.6,
+          "samples": 300
+        }
+      },
+      "py_query": {
+        "bf": {
+          "median_us": 469.05,
+          "p95_us": 668.8,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 1773.1,
+          "p95_us": 2203.3,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 736.9,
+          "p95_us": 879.2,
+          "samples": 300
+        }
+      },
+      "py_recall": {
+        "kd": 1.0,
+        "hnsw": 0.593
+      },
+      "cpp_recall": {
+        "kd": 1.0,
+        "hnsw": 0.593
+      },
+      "parity": {
+        "levels_equal": true,
+        "levels_mismatch": 0,
+        "top_equal": true,
+        "entry_equal": true,
+        "nbr_lists_total": 5331,
+        "nbr_lists_mismatch": 0,
+        "bf": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.025516950221786e-09
+        },
+        "kd": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.025516950221786e-09
+        },
+        "hnsw": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.7750002839442025e-09
+        }
+      }
+    },
+    {
+      "dataset": "clustered",
+      "n": 5000,
+      "dims": 16,
+      "metric": "cosine",
+      "cpp_build_s": {
+        "bf": 0.0004811,
+        "kd": 0.0012189,
+        "hnsw": 0.613591
+      },
+      "py_build_s": {
+        "bf": 0.0003129,
+        "kd": 0.0134005,
+        "hnsw": 11.1782014
+      },
+      "cpp_query": {
+        "bf": {
+          "median_us": 259.0,
+          "p95_us": 273.6,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 2.6,
+          "p95_us": 4.5,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 57.6,
+          "p95_us": 68.1,
+          "samples": 300
+        }
+      },
+      "py_query": {
+        "bf": {
+          "median_us": 537.4,
+          "p95_us": 746.6,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 159.8,
+          "p95_us": 280.1,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 1106.5,
+          "p95_us": 1328.4,
+          "samples": 300
+        }
+      },
+      "py_recall": {
+        "kd": 0.13,
+        "hnsw": 0.596
+      },
+      "cpp_recall": {
+        "kd": 0.13,
+        "hnsw": 0.596
+      },
+      "parity": {
+        "levels_equal": true,
+        "levels_mismatch": 0,
+        "top_equal": true,
+        "entry_equal": true,
+        "nbr_lists_total": 5331,
+        "nbr_lists_mismatch": 0,
+        "bf": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.325374379780141e-09
+        },
+        "kd": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 4.755947006842431e-09
+        },
+        "hnsw": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 3.5153849222321253e-09
+        }
+      }
+    },
+    {
+      "dataset": "clustered",
+      "n": 2000,
+      "dims": 128,
+      "metric": "euclidean",
+      "cpp_build_s": {
+        "bf": 0.0004436,
+        "kd": 0.0005697,
+        "hnsw": 0.2731312
+      },
+      "py_build_s": {
+        "bf": 0.0001075,
+        "kd": 0.0037456,
+        "hnsw": 2.9700056
+      },
+      "cpp_query": {
+        "bf": {
+          "median_us": 156.5,
+          "p95_us": 168.4,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 117.65,
+          "p95_us": 142.7,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 61.1,
+          "p95_us": 84.5,
+          "samples": 300
+        }
+      },
+      "py_query": {
+        "bf": {
+          "median_us": 1186.75,
+          "p95_us": 1369.5,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 5163.7,
+          "p95_us": 5973.9,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 625.3,
+          "p95_us": 743.2,
+          "samples": 300
+        }
+      },
+      "py_recall": {
+        "kd": 1.0,
+        "hnsw": 0.721
+      },
+      "cpp_recall": {
+        "kd": 1.0,
+        "hnsw": 0.721
+      },
+      "parity": {
+        "levels_equal": true,
+        "levels_mismatch": 0,
+        "top_equal": true,
+        "entry_equal": true,
+        "nbr_lists_total": 2124,
+        "nbr_lists_mismatch": 0,
+        "bf": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 7.537760902054138e-10
+        },
+        "kd": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 7.537760902054138e-10
+        },
+        "hnsw": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 1.0937197403661847e-09
+        }
+      }
+    },
+    {
+      "dataset": "clustered",
+      "n": 2000,
+      "dims": 128,
+      "metric": "cosine",
+      "cpp_build_s": {
+        "bf": 0.0003706,
+        "kd": 0.0005687,
+        "hnsw": 0.3627
+      },
+      "py_build_s": {
+        "bf": 0.0001408,
+        "kd": 0.0040481,
+        "hnsw": 4.3579909
+      },
+      "cpp_query": {
+        "bf": {
+          "median_us": 228.7,
+          "p95_us": 250.0,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 4.65,
+          "p95_us": 10.0,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 65.45,
+          "p95_us": 76.3,
+          "samples": 300
+        }
+      },
+      "py_query": {
+        "bf": {
+          "median_us": 1368.85,
+          "p95_us": 1594.8,
+          "samples": 300
+        },
+        "kd": {
+          "median_us": 151.35,
+          "p95_us": 323.7,
+          "samples": 300
+        },
+        "hnsw": {
+          "median_us": 914.05,
+          "p95_us": 1058.2,
+          "samples": 300
+        }
+      },
+      "py_recall": {
+        "kd": 0.122,
+        "hnsw": 0.597
+      },
+      "cpp_recall": {
+        "kd": 0.122,
+        "hnsw": 0.597
+      },
+      "parity": {
+        "levels_equal": true,
+        "levels_mismatch": 0,
+        "top_equal": true,
+        "entry_equal": true,
+        "nbr_lists_total": 2124,
+        "nbr_lists_mismatch": 0,
+        "bf": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 1.1318481130558767e-09
+        },
+        "kd": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 2.1836458193965213e-09
+        },
+        "hnsw": {
+          "queries": 100,
+          "id_list_mismatch": 0,
+          "dist_mismatch": 0,
+          "max_rel_dist_diff": 2.349068369082553e-09
+        }
+      }
+    }
+  ]
+}

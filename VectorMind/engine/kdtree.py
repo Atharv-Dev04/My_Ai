@@ -61,64 +61,82 @@ class KDTree:
         self, node: Optional[_KDNode], item: VectorItem, depth: int
     ) -> _KDNode:
         """
-        Recursive BST-style insertion.
+        BST-style insertion (iterative).
 
-        Port of C++ ``KDTree::ins`` (main.cpp:112–118).
+        Port of C++ ``KDTree::ins`` (main.cpp:112–118). Iterative rather
+        than recursive so degenerate trees (e.g. many duplicate points,
+        depth == N) do not hit Python's recursion limit. Same placement
+        rule: ``<`` goes left, otherwise right.
         """
+        new = _KDNode(item=item)
         if node is None:
-            return _KDNode(item=item)
-        axis = depth % self._dims
-        if item.emb[axis] < node.item.emb[axis]:
-            node.left = self._insert_node(node.left, item, depth + 1)
-        else:
-            node.right = self._insert_node(node.right, item, depth + 1)
+            return new
+        cur = node
+        while True:
+            axis = depth % self._dims
+            if item.emb[axis] < cur.item.emb[axis]:
+                if cur.left is None:
+                    cur.left = new
+                    break
+                cur = cur.left
+            else:
+                if cur.right is None:
+                    cur.right = new
+                    break
+                cur = cur.right
+            depth += 1
         return node
 
-    def _knn_node(
+    def _knn_search(
         self,
-        node: Optional[_KDNode],
+        root: _KDNode,
         q: np.ndarray,
         k: int,
-        depth: int,
         dist: DistFn,
         heap: list,
     ) -> None:
         """
-        Recursive KNN traversal with pruning.
+        KNN traversal with pruning (iterative, explicit stack).
 
-        Port of C++ ``KDTree::knn`` (main.cpp:120–136).
+        Port of C++ ``KDTree::knn`` (main.cpp:120–136); visit order and
+        pruning decisions are identical to the recursive original.
 
-        ``heap`` is a max-heap implemented as a min-heap with negated
-        distances: stored as ``(-distance, id)`` so the *worst* (largest)
-        distance is always at ``heap[0]``.
+        ``heap`` emulates C++'s ``priority_queue<pair<float,int>>``
+        (max-heap on ``(dist, id)``) as a min-heap of ``(-dist, -id)``:
+        the top is the largest distance and, among equal distances, the
+        **largest id** — exactly what C++ pops first.
 
-        Pruning condition:  skip farther subtree when
-            ``|axis_diff| >= worst_in_heap``
-        (same ball-within-hyperslab check as C++).
+        Pruning: the farther subtree is explored only if the heap is not
+        full or ``|axis_diff| < worst``. NOTE (inherited from C++): this
+        bound is valid for euclidean and manhattan but NOT for cosine
+        distance, so KD-Tree results under ``cosine`` are approximate.
         """
-        if node is None:
-            return
+        # stack entries: (node, depth, None)            -> visit node
+        #                (node, depth, abs_axis_diff)   -> maybe visit farther
+        stack: list = [(root, 0, None)]
+        while stack:
+            node, depth, gate = stack.pop()
+            if node is None:
+                continue
+            if gate is not None:
+                if len(heap) < k or gate < -heap[0][0]:
+                    stack.append((node, depth, None))
+                continue
 
-        dn = dist(q, node.item.emb)
+            dn = dist(q, node.item.emb)
+            if len(heap) < k or dn < -heap[0][0]:
+                heapq.heappush(heap, (-dn, -node.item.id))
+                if len(heap) > k:
+                    heapq.heappop(heap)
 
-        # Add to heap if there is room or this point improves the current worst
-        if len(heap) < k or dn < -heap[0][0]:
-            heapq.heappush(heap, (-dn, node.item.id))
-            if len(heap) > k:
-                heapq.heappop(heap)
+            axis = depth % self._dims
+            diff = float(q[axis]) - float(node.item.emb[axis])
+            closer = node.left if diff < 0 else node.right
+            farther = node.right if diff < 0 else node.left
 
-        axis = depth % self._dims
-        diff = float(q[axis]) - float(node.item.emb[axis])
-
-        closer = node.left if diff < 0 else node.right
-        farther = node.right if diff < 0 else node.left
-
-        self._knn_node(closer, q, k, depth + 1, dist, heap)
-
-        # Only explore farther subtree if the axis-split distance could
-        # improve the current worst neighbour — mirrors C++ (main.cpp:134)
-        if len(heap) < k or abs(diff) < -heap[0][0]:
-            self._knn_node(farther, q, k, depth + 1, dist, heap)
+            # farther gate is processed after the closer subtree completes
+            stack.append((farther, depth + 1, abs(diff)))
+            stack.append((closer, depth + 1, None))
 
     # ── PUBLIC ───────────────────────────────────────────────────────────
 
@@ -147,13 +165,15 @@ class KDTree:
             List of ``(distance, id)`` pairs, length ``≤ k``.
             Returns ``[]`` for an empty tree.
         """
-        if self._root is None:
+        # k <= 0: C++ would call top() on an empty heap (undefined
+        # behaviour); Python returns an empty result instead.
+        if self._root is None or k <= 0:
             return []
         q = np.asarray(q, dtype=np.float32)
         heap: list[tuple[float, int]] = []
-        self._knn_node(self._root, q, k, 0, dist, heap)
+        self._knn_search(self._root, q, k, dist, heap)
         # Convert negated max-heap back to (dist, id), sort ascending
-        result = [(-neg_d, id_) for neg_d, id_ in heap]
+        result = [(-neg_d, -neg_id) for neg_d, neg_id in heap]
         result.sort()
         return result
 

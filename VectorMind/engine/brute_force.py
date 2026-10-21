@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .metrics import DistFn
+from .metrics import DistFn, get_batch_fn
 from .models import VectorItem
 
 
@@ -31,6 +31,9 @@ class BruteForce:
 
     def __init__(self) -> None:
         self.items: list[VectorItem] = []
+        # Cached (n, dims) matrix for vectorised knn; invalidated on mutation.
+        self._mat: np.ndarray | None = None
+        self._ids: np.ndarray = np.empty(0, dtype=np.int64)
 
     # ── PUBLIC ───────────────────────────────────────────────────────────
 
@@ -41,6 +44,7 @@ class BruteForce:
         Port of C++ ``BruteForce::insert`` (main.cpp:74).
         """
         self.items.append(item)
+        self._mat = None
 
     def knn(
         self, q: np.ndarray, k: int, dist: DistFn
@@ -63,12 +67,32 @@ class BruteForce:
             return []
 
         q = np.asarray(q, dtype=np.float32)
-        pairs: list[tuple[float, int]] = [
-            (dist(q, item.emb), item.id) for item in self.items
-        ]
-        # Sort by (distance, id) — matches C++ pair<float,int> sort
-        pairs.sort()
-        return pairs[:k]
+        batch = get_batch_fn(dist)
+        if batch is None:
+            pairs: list[tuple[float, int]] = [
+                (dist(q, item.emb), item.id) for item in self.items
+            ]
+            # Sort by (distance, id) — matches C++ pair<float,int> sort
+            pairs.sort()
+            return pairs[:k]
+
+        mat, ids = self._matrix()
+        d = batch(q, mat)
+        # lexsort: last key is primary -> sort by (distance, id) ascending,
+        # identical ordering to sorting C++ pair<float,int>.
+        order = np.lexsort((ids, d))[: max(k, 0)]
+        return list(zip(d[order].tolist(), ids[order].tolist()))
+
+    def _matrix(self) -> tuple[np.ndarray, np.ndarray]:
+        """Contiguous float32 matrix + id array, cached until a mutation."""
+        if self._mat is None or len(self._ids) != len(self.items):
+            self._mat = np.stack(
+                [np.asarray(v.emb, dtype=np.float32) for v in self.items]
+            )
+            self._ids = np.fromiter(
+                (v.id for v in self.items), dtype=np.int64, count=len(self.items)
+            )
+        return self._mat, self._ids
 
     def remove(self, id_: int) -> None:
         """
@@ -77,3 +101,4 @@ class BruteForce:
         Port of C++ ``BruteForce::remove`` (main.cpp:87–90).
         """
         self.items = [v for v in self.items if v.id != id_]
+        self._mat = None
