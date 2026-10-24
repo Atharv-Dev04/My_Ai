@@ -246,6 +246,17 @@ export const SearchPage: React.FC = () => {
           <Skeleton height="7rem" />
           <Skeleton height="7rem" />
         </div>
+      ) : error && error.toLowerCase().includes('no documents') ? (
+        <EmptyState
+          title="No Knowledge Indexed Yet"
+          description="Your DocumentDB knowledge index is currently empty. Upload a PDF, DOCX, TXT, or Markdown document to start performing semantic vector searches."
+          action={{
+            label: 'Upload Knowledge Documents',
+            onClick: () => {
+              window.location.href = '/app/upload';
+            },
+          }}
+        />
       ) : error ? (
         <div style={{ maxWidth: '36rem', margin: '1rem auto' }}>
           <ErrorState
@@ -256,8 +267,12 @@ export const SearchPage: React.FC = () => {
         </div>
       ) : response && response.contexts.length === 0 ? (
         <EmptyState
-          title="No Relevant Chunks Found"
-          description={`No document chunks met the cosine similarity threshold (max_dist <= 0.7) for "${response.query}". Try rephrasing your search or uploading more knowledge.`}
+          title={response.total_chunks_scanned === 0 ? "No Knowledge Indexed Yet" : "No Relevant Chunks Found"}
+          description={
+            response.total_chunks_scanned === 0
+              ? "Your DocumentDB knowledge index is currently empty. Upload a PDF, DOCX, TXT, or Markdown document to start performing semantic searches."
+              : `No document chunks met the cosine similarity threshold (max_dist <= 0.7) for "${response.query}". Try rephrasing your search or uploading more knowledge.`
+          }
           action={{
             label: 'Upload Knowledge Documents',
             onClick: () => {
