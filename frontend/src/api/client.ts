@@ -209,3 +209,18 @@ export const searchVectors = (
     body: JSON.stringify({ embedding, k, metric, algo }),
   });
 };
+
+// ── RAG Generation Endpoint ───────────────────────────────────────────────
+export interface RagAskResponse {
+  answer: string;
+  model: string;
+  contexts: ContextChunk[];
+  doc_count: number;
+}
+
+export const ragAsk = (question: string, k: number = 3): Promise<RagAskResponse> => {
+  return apiClient<RagAskResponse>('/rag/ask', {
+    method: 'POST',
+    body: JSON.stringify({ question, k }),
+  });
+};

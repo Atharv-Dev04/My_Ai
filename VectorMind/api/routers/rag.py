@@ -42,6 +42,8 @@ def rag_ask(
                 title=doc.title,
                 text=doc.text,
                 distance=d,
+                page_number=getattr(doc, "page_number", None),
+                chunk_index=getattr(doc, "chunk_index", 0),
             )
             for d, doc in contexts
         ],
