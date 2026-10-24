@@ -69,12 +69,56 @@ Full table incl. cosine: `bench.json`. Python is roughly 10–100× slower on qu
    Manhattan recall was not benchmarked here (only parity-tested vs C++).
 2. **HNSW recall on tightly clustered data is low** (0.59 at ef=50) and
    barely improves with larger ef (C++ ef sweep: 50→0.5930, 100/200/400→0.5940).
-   Since ef does not help, the cause is graph structure, not beam width. Hypothesis
-   (not tested): nearest-M neighbour selection without a diversity heuristic keeps
-   clusters weakly connected. Needs a separate, explicitly approved task.
+   Root cause measured. See "Limitations investigation" below.
 3. KD-Tree ids at the k-th tie boundary are unspecified (strict `<` admission);
    distances are exact. Matches C++ (0 id mismatches).
 4. `HNSW.remove` does not repair the graph or update `topLayer` (D4, as C++).
+
+## Limitations investigation (diagnostic only, no engine changes)
+`python -m benchmarks.investigate_limits` → `benchmarks/results/limits_investigation.json`.
+Variants are prototyped inside that script; the engine is unchanged.
+
+**HNSW, clustered n=5000, d=16, 10 clusters (σ=0.05), euclidean, k=10, ef=50, ef_build=200, 100 held-out queries, seed 11**
+
+`reach_upper_bound` = fraction of the true top-10 reachable over directed
+layer-0 edges from the node where the real upper-layer descent lands. It is an
+upper bound on what layer-0 beam search can return.
+
+| Variant | Layer-0 components | Recall@10 | Reach upper bound | Queries with bound 0 | Build s (Python) |
+|---|---|---|---|---|---|
+| engine (nearest-M), M=16 | 5 | 0.593 | 0.594 | 18 | 10.8 |
+| engine (nearest-M), M=32 | 6 | 0.836 | 0.836 | 8 | 28.9 |
+| Alg.4 diversity heuristic, M=16 | **1** | **1.000** | 1.000 | 0 | 40.7 |
+
+- Recall equals the reachability bound on 99/100 (M=16) and 100/100 (M=32) queries.
+  Beam search is therefore not the bottleneck. The layer-0 graph is **disconnected**:
+  4 of the 5 components are cluster-pure (purity 1.0, 1.0, 1.0, 0.627), and 18 queries
+  have none of their true neighbours reachable.
+- Cause: the original keeps the M nearest candidates both when linking a new
+  node and when shrinking an over-full neighbour list. In tight clusters this
+  removes the few cross-cluster edges, isolating clusters. Raising M only
+  partly helps (6 components remain).
+- With the HNSW paper's Alg.4 heuristic (as in hnswlib) applied to both the
+  new node's selection and list shrinking, the graph is fully connected and recall
+  is 1.000. Cross-cluster edges drop from 18.8% to 1.9% but land where they bridge clusters.
+- Not established: only one dataset, metric, and seed tested. Build cost of the
+  unoptimised prototype is 3.8× the engine's. No C++ comparison is possible
+  because the original has no heuristic.
+
+**KD-Tree under cosine (n=2000, 100 queries, k=10, seed 21)**
+
+| Dataset | Engine KD-Tree (cosine) | KD-Tree (euclidean) on L2-normalised vectors |
+|---|---|---|
+| uniform 16-D | 0.288 | **1.000** |
+| clustered 16-D | 0.157 | **1.000** |
+| clustered 128-D | 0.130 | **1.000** |
+
+- For unit vectors, ‖a−b‖² = 2 − 2·cos(a,b), so euclidean ranking on normalised
+  vectors equals cosine ranking, and the euclidean pruning bound is valid. Measured
+  recall is 1.000 on all three datasets.
+- Open details for a fix: the original's cosine guard (zero-norm vector → distance 1.0)
+  cannot be normalised and needs explicit handling. Returned distances
+  should be recomputed with the exact `cosine()` so values match the other algorithms.
 
 ## Profile (cProfile, HNSW euclidean, n=1000, d=16)
 - Build (300 inserts, 1.86 s profiled): 333,011 `euclidean` calls take 1.50 s cumulative

@@ -1,0 +1,134 @@
+{
+  "params": {
+    "n": 5000,
+    "queries": 100,
+    "dims": 16,
+    "k": 10,
+    "ef": 50,
+    "ef_build": 200,
+    "clusters": 10,
+    "sigma": 0.05,
+    "seed": 11
+  },
+  "A": {
+    "baseline_M16": {
+      "build_s": 10.84,
+      "undirected_components": 5,
+      "top_component_sizes": [
+        3333,
+        797,
+        514,
+        189,
+        167
+      ],
+      "component_cluster_purity": [
+        0.158,
+        0.627,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "cross_cluster_edge_fraction": 0.1875,
+      "recall": 0.593,
+      "reach_upper_bound": 0.594,
+      "queries_with_recall_eq_upper_bound": 99,
+      "queries_with_upper_bound_0": 18,
+      "recall_by_query_cluster": {
+        "0": 0.992,
+        "1": 1.0,
+        "2": 0.845,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 1.0,
+        "6": 0.3,
+        "7": 0.592,
+        "8": 1.0,
+        "9": 0.4
+      }
+    },
+    "baseline_M32": {
+      "build_s": 28.91,
+      "undirected_components": 6,
+      "top_component_sizes": [
+        3266,
+        514,
+        501,
+        399,
+        167,
+        153
+      ],
+      "component_cluster_purity": [
+        0.161,
+        1.0,
+        0.998,
+        0.992,
+        1.0,
+        1.0
+      ],
+      "cross_cluster_edge_fraction": 0.0892,
+      "recall": 0.836,
+      "reach_upper_bound": 0.836,
+      "queries_with_recall_eq_upper_bound": 100,
+      "queries_with_upper_bound_0": 8,
+      "recall_by_query_cluster": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "3": 0.86,
+        "4": 0.0,
+        "5": 1.0,
+        "6": 0.3,
+        "7": 1.0,
+        "8": 1.0,
+        "9": 1.0
+      }
+    },
+    "heuristic_M16": {
+      "build_s": 40.72,
+      "undirected_components": 1,
+      "top_component_sizes": [
+        5000
+      ],
+      "component_cluster_purity": [
+        0.106
+      ],
+      "cross_cluster_edge_fraction": 0.0191,
+      "recall": 1.0,
+      "reach_upper_bound": 1.0,
+      "queries_with_recall_eq_upper_bound": 100,
+      "queries_with_upper_bound_0": 0,
+      "recall_by_query_cluster": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0,
+        "4": 1.0,
+        "5": 1.0,
+        "6": 1.0,
+        "7": 1.0,
+        "8": 1.0,
+        "9": 1.0
+      }
+    }
+  },
+  "B_kdtree_cosine": {
+    "uniform16": {
+      "n": 2000,
+      "queries": 100,
+      "engine_kdtree_cosine_recall": 0.288,
+      "kdtree_euclid_on_normalised_recall": 1.0
+    },
+    "clustered16": {
+      "n": 2000,
+      "queries": 100,
+      "engine_kdtree_cosine_recall": 0.157,
+      "kdtree_euclid_on_normalised_recall": 1.0
+    },
+    "clustered128": {
+      "n": 2000,
+      "queries": 100,
+      "engine_kdtree_cosine_recall": 0.13,
+      "kdtree_euclid_on_normalised_recall": 1.0
+    }
+  }
+}
