@@ -158,3 +158,54 @@ export const getHNSWInfo = (): Promise<HNSWInfo> => {
 export const loadDemoVectors = (): Promise<{ id: number }> => {
   return apiClient<{ id: number }>('/vectors/load-demo', { method: 'POST' });
 };
+
+// ── Search Endpoints ──────────────────────────────────────────────────────
+export interface ContextChunk {
+  id: number;
+  title: string;
+  text: string;
+  distance: number;
+  page_number?: number | null;
+  chunk_index?: number;
+}
+
+export interface DocSearchResponse {
+  query: string;
+  contexts: ContextChunk[];
+  latency_ms: number;
+  total_chunks_scanned: number;
+}
+
+export const searchDocuments = (question: string, k: number = 5): Promise<DocSearchResponse> => {
+  return apiClient<DocSearchResponse>('/documents/search', {
+    method: 'POST',
+    body: JSON.stringify({ question, k }),
+  });
+};
+
+export interface SearchHit {
+  id: number;
+  metadata: string;
+  category: string;
+  distance: number;
+  embedding: number[];
+}
+
+export interface VectorSearchResponse {
+  results: SearchHit[];
+  latency_us: number;
+  algo: string;
+  metric: string;
+}
+
+export const searchVectors = (
+  embedding: number[],
+  k: number = 5,
+  metric: string = 'cosine',
+  algo: string = 'hnsw'
+): Promise<VectorSearchResponse> => {
+  return apiClient<VectorSearchResponse>('/vectors/search', {
+    method: 'POST',
+    body: JSON.stringify({ embedding, k, metric, algo }),
+  });
+};

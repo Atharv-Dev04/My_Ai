@@ -145,17 +145,25 @@ def search(
     doc_db: DocumentDB = Depends(get_document_db),
     ollama: OllamaClient = Depends(get_ollama),
 ) -> DocSearchResponse:
+    import time
+    t0 = time.perf_counter()
     results = search_documents(doc_db, ollama, body.question, body.k)
+    t1 = time.perf_counter()
+    latency_ms = round((t1 - t0) * 1000.0, 3)
+
     return DocSearchResponse(
+        query=body.question,
         contexts=[
             ContextChunkResponse(
                 id=doc.id,
                 title=doc.title,
                 text=doc.text,
-                distance=d,
+                distance=round(float(d), 5),
                 page_number=getattr(doc, "page_number", None),
                 chunk_index=getattr(doc, "chunk_index", 0),
             )
             for d, doc in results
-        ]
+        ],
+        latency_ms=latency_ms,
+        total_chunks_scanned=doc_db.size,
     )

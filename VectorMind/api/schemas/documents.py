@@ -83,7 +83,10 @@ class ContextChunkResponse(BaseModel):
 class DocSearchResponse(BaseModel):
     """Response for POST /documents/search."""
 
+    query: str
     contexts: list[ContextChunkResponse]
+    latency_ms: float = Field(..., description="Measured roundtrip retrieval latency in milliseconds")
+    total_chunks_scanned: int = Field(..., description="Total chunks in DocumentDB")
 
 
 class RagAskResponse(BaseModel):
