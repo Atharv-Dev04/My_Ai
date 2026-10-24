@@ -21,6 +21,9 @@ vectormind_engine.egg-info/
 venv/
 env/
 .env
+*.db
+*.sqlite
+*.sqlite3
 
 # ── Secrets / credentials — NEVER commit these ──────────────────────────
 .env

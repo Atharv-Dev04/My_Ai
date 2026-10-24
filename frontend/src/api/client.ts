@@ -17,6 +17,11 @@ export async function apiClient<T>(
     headers.set('Content-Type', 'application/json');
   }
 
+  const token = localStorage.getItem('vectormind_token');
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -224,3 +229,65 @@ export const ragAsk = (question: string, k: number = 3): Promise<RagAskResponse>
     body: JSON.stringify({ question, k }),
   });
 };
+
+// ── Auth & Conversation Persistence Endpoints ──────────────────────────────
+export interface UserProfile {
+  id: number;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ConversationSummary {
+  id: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export interface MessageItem {
+  id: number;
+  conversation_id: number;
+  sender: 'user' | 'assistant';
+  content: string;
+  citations: ContextChunk[] | null;
+  created_at: string;
+}
+
+export interface ConversationDetail {
+  id: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  messages: MessageItem[];
+}
+
+export const getMe = (): Promise<UserProfile> => apiClient<UserProfile>('/auth/me');
+
+export const listConversations = (): Promise<ConversationSummary[]> =>
+  apiClient<ConversationSummary[]>('/conversations');
+
+export const getConversation = (id: number): Promise<ConversationDetail> =>
+  apiClient<ConversationDetail>(`/conversations/${id}`);
+
+export const createConversation = (title?: string): Promise<ConversationSummary> =>
+  apiClient<ConversationSummary>('/conversations', {
+    method: 'POST',
+    body: JSON.stringify({ title: title || 'New Conversation' }),
+  });
+
+export const deleteConversation = (id: number): Promise<void> =>
+  apiClient<void>(`/conversations/${id}`, { method: 'DELETE' });
+
+export const appendMessage = (
+  conversationId: number,
+  sender: 'user' | 'assistant',
+  content: string,
+  citations?: ContextChunk[]
+): Promise<MessageItem> =>
+  apiClient<MessageItem>(`/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ sender, content, citations: citations || null }),
+  });
