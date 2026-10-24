@@ -77,11 +77,17 @@ export const ChatPage: React.FC = () => {
     } catch (err: unknown) {
       const msg = (err as Error).message || 'Failed to generate RAG response';
       setError(msg);
-      // Append error message from assistant
+
+      let helpfulText = `Error: ${msg}. Please ensure Ollama is running and has required models pulled (e.g. nomic-embed-text, llama3.2).`;
+      if (msg.toLowerCase().includes('no documents indexed')) {
+        helpfulText = `No knowledge documents have been indexed into DocumentDB yet. Because VectorMind uses grounded retrieval, please upload at least one document (PDF, DOCX, TXT, or MD) at http://localhost:5173/app/upload before asking questions.`;
+      }
+
+      // Append helpful guidance message from assistant
       const errorResponse: ChatMessage = {
         id: Math.random().toString(36).substring(2, 9),
         sender: 'assistant',
-        content: `Error: ${msg}. Please ensure Ollama is running and has required models pulled (e.g. nomic-embed-text, llama3.2).`,
+        content: helpfulText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorResponse]);
