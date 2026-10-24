@@ -54,3 +54,19 @@ The final application must:
 - Have a responsive, distinctive glassmorphism UI.
 - Include documented setup, migrations, testing, and deployment.
 - Accurately distinguish inherited code from new contributions.
+
+---
+
+## Frontend Redesign Master Prompt (UI v0.1 -> v1.1)
+- **Role**: Senior frontend engineer upgrading VectorMind from UI v0.1 to v1.1.
+- **Goal**: Implement a polished, modern dark-professional interface inspired by the supplied reference board. Make it feel like a credible developer/knowledge product, not a generic AI template.
+- **Rules**:
+  1. Inspect and work inside the existing repository; reuse its framework (React 18 + Vite), routing (React Router 6), component library, API client (`frontend/src/api/client.ts`), and conventions.
+  2. This is a frontend redesign, not a backend rewrite. Do not change endpoint paths, HTTP methods, request/response schemas, auth behavior, ingestion, retrieval, or business logic.
+  3. Never fabricate metrics, document names, search results, chat answers, citations, health status, or progress. Use real API data; show honest empty/unavailable states when data or endpoints do not exist.
+  4. **Visual direction**: Premium dark professional workspace; deep blue-black backgrounds (`#0B0F17` / `#0E131F`), charcoal/slate surfaces (`#141A28`), fine cool-gray borders (`#1F293D`), off-white text (`#E2E8F0` / `#94A3B8`), restrained cyan/blue accents (`#38BDF8` / `#2563EB`), occasional teal/amber/red status indicators. No purple-neon AI gradients, rainbow gradients, excessive glow, or generic AI-orb decoration.
+  5. Use the visual reference as inspiration, not a pixel-perfect copy. Preserve VectorMind branding and use original or properly licensed assets.
+  6. **Performance first**: Avoid heavy backdrop blur, animated backgrounds, large shadows, unnecessary dependencies, repeated API calls, and avoidable rerenders. Prefer transform/opacity transitions and respect `prefers-reduced-motion`.
+  7. **Responsive & accessible**: Keyboard navigation, visible focus rings, semantic HTML, WCAG contrast compliance, accessible ARIA labels, structured loading/error/empty states, and full desktop/tablet/mobile layouts.
+  8. After each task, run relevant lint (`npx oxlint`), typecheck (`tsc -b`), tests (`pytest`), and build (`npm run build`), fix regressions, list changed files, and report API assumptions or blockers.
+
