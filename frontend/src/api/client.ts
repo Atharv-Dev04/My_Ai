@@ -60,7 +60,7 @@ export async function apiClient<T>(
   }
 }
 
-// Health and status utilities
+// ── System & Health Endpoints ─────────────────────────────────────────────
 export interface HealthResponse {
   status: string;
   version?: string;
@@ -82,4 +82,58 @@ export const checkApiHealth = (): Promise<HealthResponse> => {
 
 export const getSystemStatus = (): Promise<StatusResponse> => {
   return apiClient<StatusResponse>('/status');
+};
+
+// ── Document Endpoints ────────────────────────────────────────────────────
+export interface DocListItem {
+  id: number;
+  title: string;
+  preview: string;
+  words: number;
+}
+
+export const getDocuments = (): Promise<DocListItem[]> => {
+  return apiClient<DocListItem[]>('/documents');
+};
+
+export const deleteDocument = (id: number): Promise<void> => {
+  return apiClient<void>(`/documents/${id}`, { method: 'DELETE' });
+};
+
+// ── Vector Endpoints ──────────────────────────────────────────────────────
+export interface VectorStats {
+  count: number;
+  dims: number;
+  algorithms: string[];
+  metrics: string[];
+}
+
+export interface VectorListItem {
+  id: number;
+  metadata: string;
+  category: string;
+  embedding: number[];
+}
+
+export interface HNSWInfo {
+  top_layer: number;
+  node_count: number;
+  nodes_per_layer: Record<string, number>;
+  edges_per_layer: Record<string, number>;
+}
+
+export const getVectorStats = (): Promise<VectorStats> => {
+  return apiClient<VectorStats>('/vectors/stats');
+};
+
+export const getVectors = (): Promise<VectorListItem[]> => {
+  return apiClient<VectorListItem[]>('/vectors');
+};
+
+export const getHNSWInfo = (): Promise<HNSWInfo> => {
+  return apiClient<HNSWInfo>('/vectors/hnsw-info');
+};
+
+export const loadDemoVectors = (): Promise<{ id: number }> => {
+  return apiClient<{ id: number }>('/vectors/load-demo', { method: 'POST' });
 };

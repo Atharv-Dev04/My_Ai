@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import {
   Home,
   LayoutDashboard,
@@ -15,12 +15,13 @@ import {
   Menu,
   X,
   Database,
+  ExternalLink,
 } from 'lucide-react';
 import { useTheme } from '../../context/useTheme';
 
 const navigationItems = [
-  { name: 'App Home', path: '/app', icon: Home },
   { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
+  { name: 'Overview', path: '/app', icon: Home },
   { name: 'Documents', path: '/app/documents', icon: FileText },
   { name: 'Upload', path: '/app/upload', icon: Upload },
   { name: 'Search', path: '/app/search', icon: Search },
@@ -42,14 +43,21 @@ export const Layout: React.FC = () => {
     setMobileMenuOpen(false);
   }
 
+  // Determine current section title
+  const currentNav = navigationItems.find(
+    (item) => item.path === location.pathname || (item.path === '/app' && location.pathname === '/app')
+  );
+  const pageTitle = currentNav?.name || 'Workspace';
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: 'var(--bg-primary)' }}>
       {/* Sidebar for Desktop */}
       <aside
         style={{
           width: '240px',
           backgroundColor: 'var(--bg-surface)',
           backdropFilter: 'var(--backdrop-blur)',
+          WebkitBackdropFilter: 'var(--backdrop-blur)',
           borderRight: '1px solid var(--border-subtle)',
           display: 'flex',
           flexDirection: 'column',
@@ -61,13 +69,16 @@ export const Layout: React.FC = () => {
         className="desktop-sidebar"
       >
         {/* Brand */}
-        <div
+        <Link
+          to="/"
           style={{
             padding: '1.25rem 1.5rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
             borderBottom: '1px solid var(--border-subtle)',
+            textDecoration: 'none',
+            color: 'inherit',
           }}
         >
           <div
@@ -82,12 +93,12 @@ export const Layout: React.FC = () => {
             <Database size={20} />
           </div>
           <div>
-            <span style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+            <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
               VectorMind
             </span>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Semantic Platform</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Semantic Engine</div>
           </div>
-        </div>
+        </Link>
 
         {/* Navigation Links */}
         <nav
@@ -107,7 +118,7 @@ export const Layout: React.FC = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                end={item.path === '/'}
+                end={item.path === '/app'}
                 style={({ isActive }) => ({
                   display: 'flex',
                   alignItems: 'center',
@@ -132,14 +143,26 @@ export const Layout: React.FC = () => {
         {/* Footer / Theme Toggle */}
         <div
           style={{
-            padding: '1rem',
+            padding: '0.85rem 1rem',
             borderTop: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Theme</span>
+          <Link
+            to="/"
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+          >
+            Public Site <ExternalLink size={12} />
+          </Link>
           <button
             onClick={toggleTheme}
             aria-label="Toggle color theme"
@@ -155,63 +178,88 @@ export const Layout: React.FC = () => {
               justifyContent: 'center',
             }}
           >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* Top Header for Mobile */}
+        {/* Top Header Bar */}
         <header
           style={{
             height: '56px',
             borderBottom: '1px solid var(--border-subtle)',
             backgroundColor: 'var(--bg-surface)',
             backdropFilter: 'var(--backdrop-blur)',
-            display: 'none',
+            WebkitBackdropFilter: 'var(--backdrop-blur)',
+            display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 1rem',
+            padding: '0 1.5rem',
             position: 'sticky',
             top: 0,
             zIndex: 30,
           }}
-          className="mobile-header"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Database size={20} color="var(--accent)" />
-            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>VectorMind</span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle color theme"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                padding: '0.4rem',
-                display: 'flex',
-              }}
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
+          {/* Mobile brand & toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle mobile menu"
+              className="mobile-toggle"
               style={{
+                display: 'none',
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--text-primary)',
+                padding: '0.35rem',
                 cursor: 'pointer',
-                padding: '0.4rem',
-                display: 'flex',
               }}
             >
-              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                {pageTitle}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick status badge & actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--bg-surface-hover)',
+                border: '1px solid var(--border-subtle)',
+                fontSize: '0.75rem',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <span>API :8000</span>
+            </div>
+
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle color theme"
+              className="topbar-theme-toggle"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.35rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'none',
+              }}
+            >
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           </div>
         </header>
@@ -227,7 +275,7 @@ export const Layout: React.FC = () => {
               bottom: 0,
               backgroundColor: 'var(--bg-primary)',
               zIndex: 50,
-              padding: '1.5rem 1rem',
+              padding: '1.25rem 1rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.5rem',
@@ -240,21 +288,21 @@ export const Layout: React.FC = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  end={item.path === '/'}
+                  end={item.path === '/app'}
                   style={({ isActive }) => ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.75rem',
                     padding: '0.75rem 1rem',
                     borderRadius: 'var(--radius-md)',
-                    fontSize: '1rem',
+                    fontSize: '0.95rem',
                     fontWeight: isActive ? 600 : 500,
                     textDecoration: 'none',
                     color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
                     backgroundColor: isActive ? 'var(--accent-light)' : 'transparent',
                   })}
                 >
-                  <Icon size={20} />
+                  <Icon size={18} />
                   <span>{item.name}</span>
                 </NavLink>
               );
@@ -266,7 +314,7 @@ export const Layout: React.FC = () => {
         <main
           style={{
             flex: 1,
-            padding: '2rem',
+            padding: '2rem 1.5rem',
             maxWidth: '1280px',
             width: '100%',
             margin: '0 auto',
@@ -282,11 +330,14 @@ export const Layout: React.FC = () => {
           .desktop-sidebar {
             display: none !important;
           }
-          .mobile-header {
+          .mobile-toggle {
+            display: flex !important;
+          }
+          .topbar-theme-toggle {
             display: flex !important;
           }
           .main-container {
-            padding: 1.25rem !important;
+            padding: 1.25rem 1rem !important;
           }
         }
       `}</style>
