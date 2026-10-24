@@ -1,10 +1,11 @@
-import { useContext } from 'react';
-import { ThemeContext, type ThemeContextType } from './theme-context';
+import { usePreferences } from './usePreferences';
+import type { ThemeContextType } from './theme-context';
 
 export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  const { preferences, toggleTheme, updatePreferences } = usePreferences();
+  return {
+    theme: preferences.theme,
+    toggleTheme,
+    setTheme: (theme) => updatePreferences({ theme }),
+  };
 };

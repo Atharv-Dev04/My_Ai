@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
+import { PreferencesProvider } from './context/PreferencesContext';
 import { Layout } from './components/layout/Layout';
 
 import { LandingPage } from './pages/LandingPage';
@@ -16,7 +16,7 @@ import { SettingsPage } from './pages/Settings';
 
 export const App: React.FC = () => {
   return (
-    <ThemeProvider>
+    <PreferencesProvider>
       <BrowserRouter>
         <Routes>
           {/* Public Landing Page */}
@@ -39,7 +39,7 @@ export const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-    </ThemeProvider>
+    </PreferencesProvider>
   );
 };
 
