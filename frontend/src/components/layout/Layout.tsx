@@ -1,15 +1,14 @@
-import React from 'react';
-import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   Home,
-  LayoutDashboard,
-  FileText,
-  Upload,
   Search,
   MessageSquare,
+  FileText,
   BarChart3,
-  User,
   Settings,
+  ChevronLeft,
+  ChevronRight,
   Sun,
   Moon,
   Menu,
@@ -18,52 +17,95 @@ import {
   ExternalLink,
   LogIn,
   LogOut,
+  Clock,
 } from 'lucide-react';
 import { useTheme } from '../../context/useTheme';
 import { useAuth } from '../../context/auth-context';
 import { AuthModal } from '../auth/AuthModal';
+import { getDocuments, type DocListItem } from '../../api/client';
+import { Badge } from '../common/Badge';
 
-const navigationItems = [
-  { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
-  { name: 'Overview', path: '/app', icon: Home },
-  { name: 'Documents', path: '/app/documents', icon: FileText },
-  { name: 'Upload', path: '/app/upload', icon: Upload },
+interface NavItem {
+  name: string;
+  path: string;
+  icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
+  exact?: boolean;
+}
+
+const mainNavItems: NavItem[] = [
+  { name: 'Home', path: '/app', icon: Home, exact: true },
   { name: 'Search', path: '/app/search', icon: Search },
-  { name: 'AI Chat', path: '/app/chat', icon: MessageSquare },
+  { name: 'Chat', path: '/app/chat', icon: MessageSquare },
+  { name: 'Documents', path: '/app/documents', icon: FileText },
   { name: 'Analytics', path: '/app/analytics', icon: BarChart3 },
-  { name: 'Profile', path: '/app/profile', icon: User },
   { name: 'Settings', path: '/app/settings', icon: Settings },
 ];
 
 export const Layout: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [authModalOpen, setAuthModalOpen] = React.useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [recentDocs, setRecentDocs] = useState<DocListItem[]>([]);
   const location = useLocation();
-  const [prevPathname, setPrevPathname] = React.useState(location.pathname);
+  const navigate = useNavigate();
 
-  // Close mobile menu on navigate
-  if (location.pathname !== prevPathname) {
-    setPrevPathname(location.pathname);
+  // Load real recently indexed documents for sidebar
+  useEffect(() => {
+    let mounted = true;
+    getDocuments()
+      .then((docs) => {
+        if (mounted) {
+          // Take top 3 unique document titles
+          const seen = new Set<string>();
+          const unique: DocListItem[] = [];
+          for (const doc of docs) {
+            if (!seen.has(doc.title)) {
+              seen.add(doc.title);
+              unique.push(doc);
+              if (unique.length >= 3) break;
+            }
+          }
+          setRecentDocs(unique);
+        }
+      })
+      .catch(() => {
+        // Quiet fail, empty recent state
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [location.pathname]);
+
+  const [prevPath, setPrevPath] = useState(location.pathname);
+
+  // Close mobile drawer if location changes
+  if (location.pathname !== prevPath) {
+    setPrevPath(location.pathname);
     setMobileMenuOpen(false);
   }
 
-  // Determine current section title
-  const currentNav = navigationItems.find(
-    (item) => item.path === location.pathname || (item.path === '/app' && location.pathname === '/app')
-  );
-  const pageTitle = currentNav?.name || 'Workspace';
+  // Global search keyboard shortcut: Ctrl+K or Cmd+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        navigate('/app/search');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: 'var(--bg-primary)' }}>
-      {/* Sidebar for Desktop */}
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: 'var(--bg-app)' }}>
+      {/* ── Left Sidebar (Desktop) ────────────────────────────────────────── */}
       <aside
+        className="desktop-sidebar"
         style={{
-          width: '240px',
-          backgroundColor: 'var(--bg-surface)',
-          backdropFilter: 'var(--backdrop-blur)',
-          WebkitBackdropFilter: 'var(--backdrop-blur)',
+          width: isCollapsed ? '72px' : '250px',
+          backgroundColor: 'var(--bg-surface-solid)',
           borderRight: '1px solid var(--border-subtle)',
           display: 'flex',
           flexDirection: 'column',
@@ -71,134 +113,310 @@ export const Layout: React.FC = () => {
           top: 0,
           height: '100vh',
           zIndex: 40,
+          transition: 'width var(--transition-normal)',
+          overflow: 'hidden',
         }}
-        className="desktop-sidebar"
+        aria-label="Application Sidebar"
       >
-        {/* Brand */}
-        <Link
-          to="/"
+        {/* Brand Header */}
+        <div
           style={{
-            padding: '1.25rem 1.5rem',
+            padding: isCollapsed ? '1rem 0.5rem' : '1.15rem 1.25rem',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.75rem',
+            justifyContent: isCollapsed ? 'center' : 'space-between',
             borderBottom: '1px solid var(--border-subtle)',
-            textDecoration: 'none',
-            color: 'inherit',
+            minHeight: '64px',
           }}
         >
-          <div
+          <Link
+            to="/app"
             style={{
-              padding: '0.4rem',
-              borderRadius: 'var(--radius-sm)',
-              backgroundColor: 'var(--accent-light)',
-              color: 'var(--accent)',
               display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              textDecoration: 'none',
+              color: 'inherit',
+              overflow: 'hidden',
             }}
           >
-            <Database size={20} />
-          </div>
-          <div>
-            <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-              VectorMind
-            </span>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Semantic Engine</div>
-          </div>
-        </Link>
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--accent-light)',
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                border: '1px solid rgba(56, 189, 248, 0.2)',
+              }}
+            >
+              <Database size={18} />
+            </div>
+            {!isCollapsed && (
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+                <span style={{ fontWeight: 700, fontSize: '0.975rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                  VectorMind
+                </span>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
+                  v1.1 Workspace
+                </span>
+              </div>
+            )}
+          </Link>
 
-        {/* Navigation Links */}
+          {!isCollapsed && (
+            <button
+              onClick={() => setIsCollapsed(true)}
+              aria-label="Collapse sidebar"
+              className="sidebar-collapse-btn"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                padding: '0.25rem',
+                borderRadius: 'var(--radius-xs)',
+              }}
+            >
+              <ChevronLeft size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Expand button when collapsed */}
+        {isCollapsed && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
+            <button
+              onClick={() => setIsCollapsed(false)}
+              aria-label="Expand sidebar"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                padding: '0.25rem',
+                borderRadius: 'var(--radius-xs)',
+              }}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Navigation Items */}
         <nav
           style={{
             flex: 1,
-            padding: '1rem 0.75rem',
+            padding: isCollapsed ? '0.75rem 0.4rem' : '0.85rem 0.75rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.25rem',
             overflowY: 'auto',
+            overflowX: 'hidden',
           }}
-          aria-label="Sidebar Navigation"
+          aria-label="Primary Navigation"
         >
-          {navigationItems.map((item) => {
+          {mainNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
-                end={item.path === '/app'}
+                end={item.exact}
+                title={isCollapsed ? item.name : undefined}
                 style={({ isActive }) => ({
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: isCollapsed ? 'center' : 'flex-start',
                   gap: '0.75rem',
-                  padding: '0.6rem 0.85rem',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '0.875rem',
+                  padding: isCollapsed ? '0.65rem 0' : '0.55rem 0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 'var(--text-base)',
                   fontWeight: isActive ? 600 : 500,
                   textDecoration: 'none',
                   color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
                   backgroundColor: isActive ? 'var(--accent-light)' : 'transparent',
+                  border: isActive ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid transparent',
                   transition: 'all var(--transition-fast)',
                 })}
               >
-                <Icon size={18} />
-                <span>{item.name}</span>
+                <Icon size={17} style={{ flexShrink: 0 }} />
+                {!isCollapsed && <span>{item.name}</span>}
               </NavLink>
             );
           })}
+
+          {/* Real Recently Viewed / Indexed Documents (Reference Board) */}
+          {!isCollapsed && recentDocs.length > 0 && (
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <div
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  padding: '0 0.75rem 0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <Clock size={12} />
+                <span>Recently Indexed</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                {recentDocs.map((doc) => (
+                  <Link
+                    key={doc.id}
+                    to="/app/documents"
+                    title={doc.title}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.4rem 0.75rem',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: 'var(--text-xs)',
+                      color: 'var(--text-secondary)',
+                      textDecoration: 'none',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--accent)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </nav>
 
-        {/* Footer / Theme Toggle */}
+        {/* User Profile / Auth Area in Sidebar */}
         <div
           style={{
-            padding: '0.85rem 1rem',
+            padding: isCollapsed ? '0.75rem 0.4rem' : '0.85rem 1rem',
             borderTop: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--bg-surface-elevated)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: isCollapsed ? 'center' : 'space-between',
+            gap: '0.5rem',
           }}
         >
-          <Link
-            to="/"
-            style={{
-              fontSize: '0.75rem',
-              color: 'var(--text-muted)',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
-            Public Site <ExternalLink size={12} />
-          </Link>
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle color theme"
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '0.4rem',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden', width: '100%' }}>
+              <Link
+                to="/app/profile"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.55rem',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  overflow: 'hidden',
+                  flex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--accent-light)',
+                    color: 'var(--accent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 600,
+                    fontSize: 'var(--text-xs)',
+                    flexShrink: 0,
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                  }}
+                >
+                  {(user.full_name || user.email)[0].toUpperCase()}
+                </div>
+                {!isCollapsed && (
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, overflow: 'hidden' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user.full_name || user.email.split('@')[0]}
+                    </span>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                      Authenticated
+                    </span>
+                  </div>
+                )}
+              </Link>
+
+              {!isCollapsed && (
+                <button
+                  onClick={logout}
+                  title="Sign out"
+                  aria-label="Sign out"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '0.25rem',
+                    borderRadius: 'var(--radius-xs)',
+                    display: 'flex',
+                  }}
+                >
+                  <LogOut size={15} />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              style={{
+                width: '100%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--accent)',
+                color: 'var(--accent-foreground)',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <LogIn size={14} />
+              {!isCollapsed && <span>Sign In</span>}
+            </button>
+          )}
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* Top Header Bar */}
+      {/* ── Main Application Workspace ────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: 'var(--bg-app)' }}>
+        {/* Top Header & Search Shortcut Bar */}
         <header
           style={{
             height: '56px',
             borderBottom: '1px solid var(--border-subtle)',
-            backgroundColor: 'var(--bg-surface)',
-            backdropFilter: 'var(--backdrop-blur)',
-            WebkitBackdropFilter: 'var(--backdrop-blur)',
+            backgroundColor: 'var(--bg-surface-solid)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -208,11 +426,11 @@ export const Layout: React.FC = () => {
             zIndex: 30,
           }}
         >
-          {/* Mobile brand & toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Left: Mobile Toggle & Global Search Shortcut */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, maxWidth: '480px' }}>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle mobile menu"
+              aria-label="Toggle mobile navigation menu"
               className="mobile-toggle"
               style={{
                 display: 'none',
@@ -225,93 +443,78 @@ export const Layout: React.FC = () => {
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                {pageTitle}
+
+            {/* Functional Global Search Shortcut Bar */}
+            <div
+              onClick={() => navigate('/app/search')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  navigate('/app/search');
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                maxWidth: '360px',
+                padding: '0.35rem 0.75rem',
+                borderRadius: 'var(--radius-pill)',
+                backgroundColor: 'var(--bg-surface-hover)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-muted)',
+                fontSize: 'var(--text-sm)',
+                cursor: 'pointer',
+                transition: 'border-color var(--transition-fast)',
+              }}
+              aria-label="Search knowledge base (Ctrl+K)"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Search size={14} color="var(--text-muted)" />
+                <span>Search knowledge base...</span>
+              </div>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.6875rem',
+                  padding: '0.1rem 0.4rem',
+                  borderRadius: 'var(--radius-xs)',
+                  backgroundColor: 'var(--bg-surface-solid)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Ctrl K
               </span>
             </div>
           </div>
 
-          {/* Quick status badge & actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div
+          {/* Right: API Telemetry & Theme Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <Badge variant="cyan" size="sm" dot>
+              <span>API :8000</span>
+            </Badge>
+
+            <Link
+              to="/"
               style={{
+                fontSize: 'var(--text-xs)',
+                color: 'var(--text-muted)',
+                textDecoration: 'none',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '9999px',
-                backgroundColor: 'var(--bg-surface-hover)',
-                border: '1px solid var(--border-subtle)',
-                fontSize: '0.75rem',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-secondary)',
+                gap: '0.25rem',
               }}
             >
-              <span>API :8000</span>
-            </div>
-
-            {user ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <NavLink
-                  to="/app/profile"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    textDecoration: 'none',
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: '9999px',
-                    backgroundColor: 'var(--accent-light)',
-                    color: 'var(--accent)',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  <User size={13} />
-                  <span>{user.full_name || user.email.split('@')[0]}</span>
-                </NavLink>
-                <button
-                  onClick={logout}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
-                    padding: '0.2rem 0.4rem',
-                  }}
-                  title="Sign out"
-                >
-                  <LogOut size={14} />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--accent)',
-                  color: 'var(--accent-foreground)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                <LogIn size={13} />
-                <span>Sign In</span>
-              </button>
-            )}
+              <span>Site</span>
+              <ExternalLink size={11} />
+            </Link>
 
             <button
               onClick={toggleTheme}
               aria-label="Toggle color theme"
-              className="topbar-theme-toggle"
               style={{
                 background: 'transparent',
                 border: '1px solid var(--border-subtle)',
@@ -319,7 +522,10 @@ export const Layout: React.FC = () => {
                 padding: '0.35rem',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
-                display: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'border-color var(--transition-fast)',
               }}
             >
               {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
@@ -327,12 +533,7 @@ export const Layout: React.FC = () => {
           </div>
         </header>
 
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-        />
-
-        {/* Mobile Nav Overlay */}
+        {/* ── Mobile Navigation Drawer ───────────────────────────────────── */}
         {mobileMenuOpen && (
           <div
             style={{
@@ -341,7 +542,7 @@ export const Layout: React.FC = () => {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'var(--bg-primary)',
+              backgroundColor: 'var(--bg-surface-solid)',
               zIndex: 50,
               padding: '1.25rem 1rem',
               display: 'flex',
@@ -350,20 +551,20 @@ export const Layout: React.FC = () => {
               overflowY: 'auto',
             }}
           >
-            {navigationItems.map((item) => {
+            {mainNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  end={item.path === '/app'}
+                  end={item.exact}
                   style={({ isActive }) => ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.75rem',
                     padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '0.95rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 'var(--text-base)',
                     fontWeight: isActive ? 600 : 500,
                     textDecoration: 'none',
                     color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
@@ -378,16 +579,21 @@ export const Layout: React.FC = () => {
           </div>
         )}
 
-        {/* Main Routed Page Content */}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
+
+        {/* ── Routed Content Container ───────────────────────────────────── */}
         <main
+          className="main-container"
           style={{
             flex: 1,
-            padding: '2rem 1.5rem',
-            maxWidth: '1280px',
+            padding: '1.75rem 2rem',
+            maxWidth: '1360px',
             width: '100%',
             margin: '0 auto',
           }}
-          className="main-container"
         >
           <Outlet />
         </main>
@@ -399,9 +605,6 @@ export const Layout: React.FC = () => {
             display: none !important;
           }
           .mobile-toggle {
-            display: flex !important;
-          }
-          .topbar-theme-toggle {
             display: flex !important;
           }
           .main-container {
