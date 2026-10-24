@@ -47,10 +47,12 @@ htmlcov/
 *.suo
 *.user
 
-# ── OS artefacts ────────────────────────────────────────────────────────
+# ── OS / Reference design assets — never commit visual board ────────────
 .DS_Store
 Thumbs.db
 desktop.ini
+VectorMind AI Knowledge Dashboard.png
+reference*.png
 
 # ── Node / frontend (future tasks) ──────────────────────────────────────
 node_modules/
