@@ -312,3 +312,68 @@ export const appendMessage = (
     method: 'POST',
     body: JSON.stringify({ sender, content, citations: citations || null }),
   });
+
+// ── Benchmark & Evaluation Endpoints ─────────────────────────────────────────
+export interface LatencyStat {
+  median_us: number;
+  p95_us: number;
+  samples: number;
+}
+
+export interface BenchmarkRun {
+  dataset: string;
+  n: number;
+  dims: number;
+  metric: string;
+  cpp_build_s: Record<string, number>;
+  py_build_s: Record<string, number>;
+  cpp_query: Record<string, LatencyStat>;
+  py_query: Record<string, LatencyStat>;
+  py_recall: Record<string, number>;
+  cpp_recall: Record<string, number>;
+  parity: Record<string, unknown>;
+}
+
+export interface BenchmarkData {
+  hardware: {
+    cpu: string;
+    os: string;
+    python: string;
+    numpy: string;
+  };
+  params: {
+    reps: number;
+    queries: number;
+    k: number;
+    ef: number;
+    cpp_build_repeats: number;
+  };
+  runs: BenchmarkRun[];
+}
+
+export interface EvaluationQuery {
+  query_id: string | number;
+  retrieved_ids: (number | string)[];
+  ground_truth_ids: (number | string)[];
+}
+
+export interface EvaluationSummary {
+  queries_evaluated: number;
+  k: number;
+  mean_recall_at_k: number;
+  mean_precision_at_k: number;
+  mrr: number;
+  mean_map_at_k: number;
+}
+
+export const getBenchmarkResults = (): Promise<BenchmarkData> =>
+  apiClient<BenchmarkData>('/benchmarks/results');
+
+export const evaluateRetrieval = (
+  queries: EvaluationQuery[],
+  k: number = 10
+): Promise<EvaluationSummary> =>
+  apiClient<EvaluationSummary>('/benchmarks/evaluate', {
+    method: 'POST',
+    body: JSON.stringify({ queries, k }),
+  });

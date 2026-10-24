@@ -24,7 +24,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import get_settings
-from api.routers import auth, conversations, documents, rag, system, vectors
+from api.routers import auth, benchmarks, conversations, documents, rag, system, vectors
 from clients.ollama_client import OllamaClient
 from engine.document_db import DocumentDB
 from engine.vector_db import VectorDB
@@ -108,6 +108,7 @@ def create_app() -> FastAPI:
     application.include_router(vectors.router)
     application.include_router(documents.router)
     application.include_router(rag.router)
+    application.include_router(benchmarks.router)
 
     return application
 
