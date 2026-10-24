@@ -1,86 +1,148 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   VectorMind Design System v1.1
+   Dark Professional Workspace & Glassmorphic Elevation Tokens
+   Inspired by Reference Architecture Board
+   ───────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  /* Color Palette - Restrained Slate & Teal Accents */
+  /* Typography Tokens */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 
-  /* Theme Tokens: Light */
-  --bg-primary: #f8fafc;
-  --bg-surface: rgba(255, 255, 255, 0.78);
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 0.9375rem;   /* 15px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+
+  /* Spacing Scale */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+
+  /* Radius Tokens */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 9999px;
+
+  /* Z-Index Hierarchy */
+  --z-base: 1;
+  --z-card: 10;
+  --z-sticky: 100;
+  --z-drawer: 500;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+  --z-toast: 1200;
+
+  /* Restrained Motion & Animation */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 150ms var(--ease-out);
+  --transition-normal: 200ms var(--ease-out);
+  --transition-smooth: 250ms var(--ease-in-out);
+
+  /* Default Theme Tokens: Light Professional */
+  --bg-app: #f4f7f9;
+  --bg-primary: #f4f7f9;
+  --bg-surface: rgba(255, 255, 255, 0.85);
   --bg-surface-solid: #ffffff;
-  --bg-surface-hover: rgba(241, 245, 249, 0.85);
-  --bg-surface-active: rgba(226, 232, 240, 0.9);
+  --bg-surface-elevated: #ffffff;
+  --bg-surface-hover: rgba(235, 241, 245, 0.8);
+  --bg-surface-active: rgba(220, 229, 236, 0.9);
 
-  --border-subtle: rgba(203, 213, 225, 0.6);
+  --border-subtle: rgba(200, 212, 224, 0.65);
   --border-strong: #cbd5e1;
-  --border-focus: #0ea5e9;
+  --border-focus: #0284c7;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
+  --text-primary: #0a141d;
+  --text-secondary: #425466;
+  --text-muted: #627d98;
   --text-inverse: #ffffff;
 
   --accent: #0284c7;
   --accent-hover: #0369a1;
-  --accent-light: rgba(14, 165, 233, 0.12);
+  --accent-light: rgba(2, 132, 199, 0.1);
   --accent-foreground: #ffffff;
 
-  --success: #059669;
-  --success-bg: rgba(16, 185, 129, 0.1);
+  --cyan: #0284c7;
+  --cyan-subtle: rgba(2, 132, 199, 0.1);
+
+  --success: #0d9488;
+  --success-bg: rgba(13, 148, 136, 0.1);
   --warning: #d97706;
-  --warning-bg: rgba(245, 158, 11, 0.1);
-  --error: #dc2626;
-  --error-bg: rgba(239, 68, 68, 0.1);
+  --warning-bg: rgba(217, 119, 6, 0.1);
+  --error: #e11d48;
+  --error-bg: rgba(225, 29, 72, 0.1);
 
-  /* Glassmorphism Specs */
+  /* Shadows */
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.09), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
   --backdrop-blur: blur(12px);
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 10px 25px -4px rgba(15, 23, 42, 0.1), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
-  --glass-reflection: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.05) 100%);
-
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --glass-reflection: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 100%);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dark Professional Workspace (Reference Spec: #071116 / #101d24 / #14232b)
+   ───────────────────────────────────────────────────────────────────────────── */
 [data-theme='dark'] {
-  --bg-primary: #090d16;
-  --bg-surface: rgba(15, 23, 42, 0.72);
-  --bg-surface-solid: #0f172a;
-  --bg-surface-hover: rgba(30, 41, 59, 0.75);
-  --bg-surface-active: rgba(51, 65, 85, 0.8);
+  --bg-app: #071116;
+  --bg-primary: #071116;
+  --bg-surface: rgba(16, 29, 36, 0.78);
+  --bg-surface-solid: #101d24;
+  --bg-surface-elevated: #14232b;
+  --bg-surface-hover: rgba(24, 40, 50, 0.85);
+  --bg-surface-active: rgba(30, 49, 61, 0.95);
 
-  --border-subtle: rgba(148, 163, 184, 0.14);
-  --border-strong: rgba(148, 163, 184, 0.25);
+  --border-subtle: rgba(148, 163, 184, 0.12);
+  --border-strong: rgba(148, 163, 184, 0.22);
   --border-focus: #38bdf8;
 
-  --text-primary: #f8fafc;
+  --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --text-inverse: #0f172a;
+  --text-inverse: #071116;
 
+  /* Restrained Cyan/Blue Action Color */
   --accent: #38bdf8;
   --accent-hover: #7dd3fc;
-  --accent-light: rgba(56, 189, 248, 0.15);
-  --accent-foreground: #090d16;
+  --accent-light: rgba(56, 189, 248, 0.12);
+  --accent-foreground: #071116;
 
-  --success: #34d399;
-  --success-bg: rgba(52, 211, 153, 0.12);
-  --warning: #fbbf24;
-  --warning-bg: rgba(251, 191, 36, 0.12);
-  --error: #f87171;
-  --error-bg: rgba(248, 113, 113, 0.12);
+  --cyan: #38bdf8;
+  --cyan-subtle: rgba(56, 189, 248, 0.12);
 
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
-  --glass-reflection: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%);
+  /* Status Colors */
+  --success: #2dd4bf;       /* Teal */
+  --success-bg: rgba(45, 212, 191, 0.12);
+  --warning: #f59e0b;       /* Amber */
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --error: #fb7185;         /* Red */
+  --error-bg: rgba(251, 113, 133, 0.12);
+
+  /* Shadows & Glass Elevation */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.45), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 36px -4px rgba(0, 0, 0, 0.65), 0 4px 14px -2px rgba(0, 0, 0, 0.4);
+  --backdrop-blur: blur(14px);
+  --glass-reflection: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%);
 }
 
-/* Base resets & typography */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Base Reset & Global Typography
+   ───────────────────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -90,9 +152,10 @@
 html, body {
   height: 100%;
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
+  background-color: var(--bg-app);
   color: var(--text-primary);
   line-height: 1.5;
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color var(--transition-normal), color var(--transition-normal);
@@ -104,7 +167,13 @@ html, body {
   flex-direction: column;
 }
 
-/* Accessibility & Reduced Motion */
+/* Accessibility: Keyboard Focus Rings */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Accessibility: Respect Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -114,18 +183,15 @@ html, body {
   }
 }
 
-:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
-}
-
-/* Utility Glassmorphism Classes */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Core Design System Utilities (Panels, Badges, Cards)
+   ───────────────────────────────────────────────────────────────────────────── */
 .glass-panel {
   background: var(--bg-surface);
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   position: relative;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
@@ -143,11 +209,18 @@ html, body {
 .solid-panel {
   background: var(--bg-surface-solid);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
-/* Scrollbar Styling */
+.elevated-panel {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Scrollbar Customization */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -159,7 +232,7 @@ html, body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
 }
 
 ::-webkit-scrollbar-thumb:hover {
