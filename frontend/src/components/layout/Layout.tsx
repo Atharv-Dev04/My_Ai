@@ -16,8 +16,12 @@ import {
   X,
   Database,
   ExternalLink,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { useTheme } from '../../context/useTheme';
+import { useAuth } from '../../context/auth-context';
+import { AuthModal } from '../auth/AuthModal';
 
 const navigationItems = [
   { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
@@ -33,6 +37,8 @@ const navigationItems = [
 
 export const Layout: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = React.useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const location = useLocation();
   const [prevPathname, setPrevPathname] = React.useState(location.pathname);
@@ -245,6 +251,63 @@ export const Layout: React.FC = () => {
               <span>API :8000</span>
             </div>
 
+            {user ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <NavLink
+                  to="/app/profile"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    textDecoration: 'none',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '9999px',
+                    backgroundColor: 'var(--accent-light)',
+                    color: 'var(--accent)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <User size={13} />
+                  <span>{user.full_name || user.email.split('@')[0]}</span>
+                </NavLink>
+                <button
+                  onClick={logout}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    padding: '0.2rem 0.4rem',
+                  }}
+                  title="Sign out"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--accent-foreground)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <LogIn size={13} />
+                <span>Sign In</span>
+              </button>
+            )}
+
             <button
               onClick={toggleTheme}
               aria-label="Toggle color theme"
@@ -263,6 +326,11 @@ export const Layout: React.FC = () => {
             </button>
           </div>
         </header>
+
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
 
         {/* Mobile Nav Overlay */}
         {mobileMenuOpen && (

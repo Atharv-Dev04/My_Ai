@@ -264,6 +264,27 @@ export interface ConversationDetail {
   messages: MessageItem[];
 }
 
+export interface AuthTokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export const registerUser = (
+  email: string,
+  password: string,
+  fullName?: string
+): Promise<UserProfile> =>
+  apiClient<UserProfile>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, full_name: fullName || null }),
+  });
+
+export const loginUser = (email: string, password: string): Promise<AuthTokenResponse> =>
+  apiClient<AuthTokenResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+
 export const getMe = (): Promise<UserProfile> => apiClient<UserProfile>('/auth/me');
 
 export const listConversations = (): Promise<ConversationSummary[]> =>

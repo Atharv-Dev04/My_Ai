@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   User,
+  ShieldCheck,
   ShieldAlert,
   KeyRound,
   ExternalLink,
@@ -8,62 +9,130 @@ import {
   FileText,
   Clock,
   Terminal,
+  LogIn,
+  LogOut,
+  UserCheck,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
+import { useAuth } from '../context/auth-context';
+import { AuthModal } from '../components/auth/AuthModal';
 
 export const ProfilePage: React.FC = () => {
-  const [showTokenDemoNotice, setShowTokenDemoNotice] = useState(false);
+  const { user, token, logout } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [showTokenDetails, setShowTokenDetails] = useState(false);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '52rem' }}>
       {/* ── Page Header ──────────────────────────────────────────────── */}
-      <div>
-        <h1
-          style={{
-            fontSize: '1.75rem',
-            fontWeight: 700,
-            letterSpacing: '-0.025em',
-            marginBottom: '0.25rem',
-            color: 'var(--text-primary)',
-          }}
-        >
-          User Identity & Session
-        </h1>
-        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-          Manage your local developer session, access credentials, and identity status.
-        </p>
-      </div>
-
-      {/* ── Honest Unauthenticated Notice ─────────────────────────────── */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '1.5rem',
-          borderLeft: '4px solid var(--warning)',
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'flex-start',
-        }}
-      >
-        <div style={{ color: 'var(--warning)', marginTop: '0.2rem' }}>
-          <ShieldAlert size={22} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, marginBottom: '0.35rem' }}>
-            Unauthenticated Mode (Local Developer Session)
-          </h3>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            User authentication and database-backed account sessions (PostgreSQL) are scheduled for future milestones.
-            The current FastAPI service operates in single-tenant local mode with in-memory indexes.
-            Personal details, avatars, and protected account settings will activate once authentication models are wired.
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <h1
+            style={{
+              fontSize: '1.75rem',
+              fontWeight: 700,
+              letterSpacing: '-0.025em',
+              marginBottom: '0.25rem',
+              color: 'var(--text-primary)',
+            }}
+          >
+            User Identity & Session
+          </h1>
+          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+            Manage your authenticated account, relational persistence, and identity status.
           </p>
         </div>
+
+        {user ? (
+          <Button variant="secondary" size="sm" onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <LogOut size={14} />
+            <span>Sign Out</span>
+          </Button>
+        ) : (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setAuthModalMode('login');
+                setAuthModalOpen(true);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <LogIn size={14} />
+              <span>Sign In</span>
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setAuthModalMode('register');
+                setAuthModalOpen(true);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <span>Register</span>
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* ── Authenticated Status Notice ─────────────────────────────────── */}
+      {user ? (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '1.5rem',
+            borderLeft: '4px solid var(--success, #10b981)',
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div style={{ color: 'var(--success, #10b981)', marginTop: '0.2rem' }}>
+            <ShieldCheck size={22} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, marginBottom: '0.35rem', color: 'var(--text-primary)' }}>
+              Authenticated Session Active (PostgreSQL / Relational Persistence)
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Your account is authenticated via signed JWT bearer tokens. All chat history, message citations,
+              uploaded documents, and user preferences are persistently stored with strict cross-user resource isolation.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '1.5rem',
+            borderLeft: '4px solid var(--warning)',
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div style={{ color: 'var(--warning)', marginTop: '0.2rem' }}>
+            <ShieldAlert size={22} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, marginBottom: '0.35rem' }}>
+              Anonymous Developer Session (Unauthenticated)
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              You are currently using the workspace without an active login. Sign in or register above to link your sessions,
+              persist conversation histories across browser reloads, and access isolated document stores.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Active Session Card ───────────────────────────────────────── */}
       <div className="solid-panel" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1.25rem' }}>
-          Active Environment Session
+          {user ? 'User Account Profile' : 'Local Environment Session'}
         </h3>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.5rem' }}>
@@ -72,22 +141,22 @@ export const ProfilePage: React.FC = () => {
               width: '64px',
               height: '64px',
               borderRadius: '50%',
-              backgroundColor: 'var(--bg-surface-hover)',
+              backgroundColor: user ? 'var(--accent-light)' : 'var(--bg-surface-hover)',
               border: '2px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--text-secondary)',
+              color: user ? 'var(--accent)' : 'var(--text-secondary)',
             }}
           >
-            <User size={32} />
+            {user ? <UserCheck size={32} /> : <User size={32} />}
           </div>
           <div>
             <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-              Local Engineer
+              {user ? (user.full_name || 'Authenticated Member') : 'Local Engineer'}
             </div>
             <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-              single_tenant_dev@vectormind.local
+              {user ? user.email : 'single_tenant_dev@vectormind.local'}
             </div>
             <div
               style={{
@@ -96,19 +165,19 @@ export const ProfilePage: React.FC = () => {
                 gap: '0.35rem',
                 fontSize: '0.75rem',
                 marginTop: '0.4rem',
-                color: 'var(--accent)',
-                backgroundColor: 'var(--accent-light)',
+                color: user ? 'var(--success, #10b981)' : 'var(--accent)',
+                backgroundColor: user ? 'rgba(16, 185, 129, 0.12)' : 'var(--accent-light)',
                 padding: '0.15rem 0.5rem',
                 borderRadius: '9999px',
                 fontWeight: 600,
               }}
             >
-              Developer Access
+              {user ? `User ID #${user.id} • Active` : 'Developer Access'}
             </div>
           </div>
         </div>
 
-        {/* Read-Only Account Specifications */}
+        {/* Account Specifications */}
         <div
           style={{
             display: 'grid',
@@ -121,7 +190,7 @@ export const ProfilePage: React.FC = () => {
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Backend Authority</div>
             <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.2rem' }}>
-              FastAPI Standalone
+              FastAPI Standalone (SQLAlchemy 2.x)
             </div>
           </div>
           <div>
@@ -131,53 +200,49 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Session Started</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Account Created</div>
             <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Clock size={14} color="var(--text-muted)" /> Local Runtime
+              <Clock size={14} color="var(--text-muted)" />
+              {user ? new Date(user.created_at).toLocaleDateString() : 'Local Runtime'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── API Keys & Tokens ─────────────────────────────────────────── */}
+      {/* ── Security & Authentication Credentials ───────────────────────── */}
       <div className="solid-panel" style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, marginBottom: '0.25rem' }}>
-              API Access & Secrets
-            </h3>
-            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              Client authorization tokens for remote API interaction. Secrets are stored in server environment variables.
-            </p>
-          </div>
-          <KeyRound size={20} color="var(--text-muted)" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <KeyRound size={18} color="var(--accent)" />
+          <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
+            Security & Token Credentials
+          </h3>
         </div>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+          API calls from the frontend transmit signed JWT tokens in the <code>Authorization: Bearer</code> header.
+        </p>
 
-        <div
-          style={{
-            padding: '1rem',
-            borderRadius: 'var(--radius-sm)',
-            backgroundColor: 'var(--bg-surface-hover)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8125rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '1rem',
-          }}
-        >
-          <span style={{ color: 'var(--text-muted)' }}>vm_dev_••••••••••••••••••••••••</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Read/Write Local</span>
-        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {token ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowTokenDetails(!showTokenDetails)}
+            >
+              {showTokenDetails ? 'Hide JWT Token Details' : 'View JWT Token Details'}
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setAuthModalMode('login');
+                setAuthModalOpen(true);
+              }}
+            >
+              Sign In to Inspect JWT Token
+            </Button>
+          )}
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowTokenDemoNotice(true)}
-          >
-            Create New Access Key
-          </Button>
           <a
             href="http://localhost:8000/docs"
             target="_blank"
@@ -196,7 +261,7 @@ export const ProfilePage: React.FC = () => {
           </a>
         </div>
 
-        {showTokenDemoNotice && (
+        {showTokenDetails && token && (
           <div
             style={{
               marginTop: '1rem',
@@ -204,11 +269,13 @@ export const ProfilePage: React.FC = () => {
               borderRadius: 'var(--radius-sm)',
               backgroundColor: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              fontSize: '0.8125rem',
+              fontSize: '0.75rem',
+              fontFamily: 'var(--font-mono)',
               color: 'var(--text-secondary)',
+              wordBreak: 'break-all',
             }}
           >
-            <strong>Note: </strong> Token generation will be wired to PostgreSQL user tables upon authentication rollout.
+            <strong>Bearer Token:</strong> {token}
           </div>
         )}
       </div>
@@ -244,6 +311,12 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultMode={authModalMode}
+      />
     </div>
   );
 };

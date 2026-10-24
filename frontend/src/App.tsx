@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PreferencesProvider } from './context/PreferencesContext';
+import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/layout/Layout';
 
 import { LandingPage } from './pages/LandingPage';
@@ -17,7 +18,8 @@ import { SettingsPage } from './pages/Settings';
 export const App: React.FC = () => {
   return (
     <PreferencesProvider>
-      <BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public Landing Page */}
           <Route path="/" element={<LandingPage />} />
@@ -39,6 +41,7 @@ export const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </AuthProvider>
     </PreferencesProvider>
   );
 };

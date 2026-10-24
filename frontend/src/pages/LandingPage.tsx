@@ -19,10 +19,13 @@ import {
   Terminal,
 } from 'lucide-react';
 import { useTheme } from '../context/useTheme';
+import { AuthModal } from '../components/auth/AuthModal';
 
 export const LandingPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-primary)' }}>
@@ -143,6 +146,28 @@ export const LandingPage: React.FC = () => {
               }}
             >
               {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+
+            <button
+              onClick={() => {
+                setAuthModalMode('login');
+                setAuthModalOpen(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                backgroundColor: 'transparent',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-subtle)',
+                padding: '0.5rem 0.85rem',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+              }}
+            >
+              Sign In
             </button>
 
             <Link
@@ -707,6 +732,12 @@ export const LandingPage: React.FC = () => {
           }
         }
       `}</style>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultMode={authModalMode}
+      />
     </div>
   );
 };
