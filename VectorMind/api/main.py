@@ -20,8 +20,10 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from api.config import get_settings
 from api.routers import auth, benchmarks, conversations, documents, rag, system, vectors
@@ -100,6 +102,20 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # ── Safe Validation Error Handling ──────────────────────────────────
+    @application.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        # Sanitize error representations so non-compliant float literals (NaN/Inf) do not crash json.dumps
+        errors = []
+        for err in exc.errors():
+            clean_err = {
+                "type": err.get("type"),
+                "loc": err.get("loc"),
+                "msg": err.get("msg"),
+            }
+            errors.append(clean_err)
+        return JSONResponse(status_code=422, content={"detail": errors})
 
     # ── Routers ──────────────────────────────────────────────────────────
     application.include_router(system.router)
