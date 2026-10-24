@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/layout/Layout';
 
+import { LandingPage } from './pages/LandingPage';
 import { HomePage } from './pages/Home';
 import { DashboardPage } from './pages/Dashboard';
 import { DocumentsPage } from './pages/Documents';
@@ -18,7 +19,11 @@ export const App: React.FC = () => {
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Layout />}>
+          {/* Public Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* App Workspace Routes */}
+          <Route path="/app" element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="documents" element={<DocumentsPage />} />
@@ -28,8 +33,10 @@ export const App: React.FC = () => {
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, ArrowRight, BookOpen, Cpu, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { checkApiHealth, type HealthResponse } from '../api/client';
+import { checkApiHealth, getSystemStatus, type HealthResponse, type StatusResponse } from '../api/client';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const HomePage: React.FC = () => {
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [systemStatus, setSystemStatus] = useState<StatusResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    checkApiHealth()
-      .then((data) => {
+    Promise.all([
+      checkApiHealth(),
+      getSystemStatus().catch(() => null),
+    ])
+      .then(([healthData, statusData]) => {
         if (mounted) {
-          setHealth(data);
+          setHealth(healthData);
+          setSystemStatus(statusData);
           setLoading(false);
         }
       })
@@ -85,7 +90,7 @@ export const HomePage: React.FC = () => {
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <Link
-              to="/search"
+              to="/app/search"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -102,7 +107,7 @@ export const HomePage: React.FC = () => {
               Try Vector Search <ArrowRight size={16} />
             </Link>
             <Link
-              to="/dashboard"
+              to="/app/dashboard"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -166,7 +171,7 @@ export const HomePage: React.FC = () => {
           <div style={{ padding: '1rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-surface-hover)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Vector Database Engine</div>
             <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem' }}>
-              {health?.vector_db ? `${health.vector_db.items} items (${health.vector_db.dims}-D)` : 'Standalone In-Memory Engine'}
+              {systemStatus ? `${systemStatus.demo_count} items (${systemStatus.demo_dims}-D index)` : 'Standalone In-Memory Engine'}
             </div>
           </div>
         </div>

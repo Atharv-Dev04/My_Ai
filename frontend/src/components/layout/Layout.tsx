@@ -19,15 +19,15 @@ import {
 import { useTheme } from '../../context/useTheme';
 
 const navigationItems = [
-  { name: 'Home', path: '/', icon: Home },
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Documents', path: '/documents', icon: FileText },
-  { name: 'Upload', path: '/upload', icon: Upload },
-  { name: 'Search', path: '/search', icon: Search },
-  { name: 'AI Chat', path: '/chat', icon: MessageSquare },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-  { name: 'Profile', path: '/profile', icon: User },
-  { name: 'Settings', path: '/settings', icon: Settings },
+  { name: 'App Home', path: '/app', icon: Home },
+  { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
+  { name: 'Documents', path: '/app/documents', icon: FileText },
+  { name: 'Upload', path: '/app/upload', icon: Upload },
+  { name: 'Search', path: '/app/search', icon: Search },
+  { name: 'AI Chat', path: '/app/chat', icon: MessageSquare },
+  { name: 'Analytics', path: '/app/analytics', icon: BarChart3 },
+  { name: 'Profile', path: '/app/profile', icon: User },
+  { name: 'Settings', path: '/app/settings', icon: Settings },
 ];
 
 export const Layout: React.FC = () => {

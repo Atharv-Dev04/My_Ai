@@ -60,16 +60,26 @@ export async function apiClient<T>(
   }
 }
 
-// Health check utility
+// Health and status utilities
 export interface HealthResponse {
   status: string;
   version?: string;
-  vector_db?: {
-    items: number;
-    dims: number;
-  };
+}
+
+export interface StatusResponse {
+  ollama_available: boolean;
+  embed_model: string;
+  gen_model: string;
+  doc_count: number;
+  doc_dims: number;
+  demo_dims: number;
+  demo_count: number;
 }
 
 export const checkApiHealth = (): Promise<HealthResponse> => {
-  return apiClient<HealthResponse>('/system/health');
+  return apiClient<HealthResponse>('/health');
+};
+
+export const getSystemStatus = (): Promise<StatusResponse> => {
+  return apiClient<StatusResponse>('/status');
 };
