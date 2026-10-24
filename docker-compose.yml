@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  vectormind-backend:
+    build:
+      context: ./VectorMind
+      dockerfile: Dockerfile
+    container_name: vectormind_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+psycopg2://vectormind:vectormind_secret@postgres:5432/vectormind
+      - JWT_SECRET=super_secret_vectormind_jwt_key_production_32_chars
+      - OLLAMA_HOST=host.docker.internal
+      - OLLAMA_PORT=11434
+    depends_on:
+      postgres:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  vectormind-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vectormind_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - vectormind-backend
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: vectormind_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vectormind
+      POSTGRES_PASSWORD: vectormind_secret
+      POSTGRES_DB: vectormind
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vectormind"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

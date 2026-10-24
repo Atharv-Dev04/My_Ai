@@ -28,6 +28,7 @@ env/
 # ── Secrets / credentials — NEVER commit these ──────────────────────────
 .env
 .env.*
+!.env.example
 *.env
 secrets.toml
 *.pem
