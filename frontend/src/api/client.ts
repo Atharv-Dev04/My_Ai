@@ -90,6 +90,18 @@ export interface DocListItem {
   title: string;
   preview: string;
   words: number;
+  page_number?: number | null;
+  chunk_index?: number;
+}
+
+export interface FileIngestResponse {
+  filename: string;
+  file_type: string;
+  size_bytes: number;
+  chunks_created: number;
+  chunk_ids: number[];
+  dims: number;
+  pages_detected?: number | null;
 }
 
 export const getDocuments = (): Promise<DocListItem[]> => {
@@ -98,6 +110,15 @@ export const getDocuments = (): Promise<DocListItem[]> => {
 
 export const deleteDocument = (id: number): Promise<void> => {
   return apiClient<void>(`/documents/${id}`, { method: 'DELETE' });
+};
+
+export const uploadDocument = (file: File): Promise<FileIngestResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiClient<FileIngestResponse>('/documents/upload', {
+    method: 'POST',
+    body: formData,
+  });
 };
 
 // ── Vector Endpoints ──────────────────────────────────────────────────────

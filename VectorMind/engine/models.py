@@ -35,16 +35,21 @@ class VectorItem:
 @dataclass
 class DocItem:
     """
-    Equivalent of C++ ``struct DocItem`` (main.cpp:644–649).
+    Equivalent of C++ ``struct DocItem`` (main.cpp:644–649), with optional
+    source pagination and chunk metadata.
 
     Fields:
-        id    : int
-        title : str
-        text  : str          — chunk content
-        emb   : np.ndarray   — float32 embedding vector
+        id          : int
+        title       : str
+        text        : str          — chunk content
+        emb         : np.ndarray   — float32 embedding vector
+        page_number : int | None   — source page number when available (e.g. PDF)
+        chunk_index : int          — 0-indexed position within source document
     """
 
     id: int
     title: str
     text: str
     emb: np.ndarray
+    page_number: int | None = None
+    chunk_index: int = 0

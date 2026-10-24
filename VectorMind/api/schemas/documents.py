@@ -59,12 +59,14 @@ class DocInsertResponse(BaseModel):
 
 
 class DocListItemResponse(BaseModel):
-    """One document in GET /documents."""
+    """One document chunk in GET /documents."""
 
     id: int
     title: str
     preview: str = Field(..., description="First 120 characters of the chunk text")
     words: int
+    page_number: int | None = Field(None, description="Physical page number where available")
+    chunk_index: int = Field(0, description="Chunk index within source document")
 
 
 class ContextChunkResponse(BaseModel):
@@ -74,6 +76,8 @@ class ContextChunkResponse(BaseModel):
     title: str
     text: str
     distance: float
+    page_number: int | None = None
+    chunk_index: int = 0
 
 
 class DocSearchResponse(BaseModel):
@@ -93,3 +97,15 @@ class RagAskResponse(BaseModel):
     model: str
     contexts: list[ContextChunkResponse]
     doc_count: int
+
+
+class FileIngestResponse(BaseModel):
+    """Response for POST /documents/upload."""
+
+    filename: str
+    file_type: str
+    size_bytes: int
+    chunks_created: int
+    chunk_ids: list[int]
+    dims: int
+    pages_detected: int | None = None

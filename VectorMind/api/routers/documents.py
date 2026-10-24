@@ -1,17 +1,16 @@
 """
-Documents router — document ingestion, listing, deletion, and semantic search.
+Documents router — document ingestion, file uploads, listing, deletion, and semantic search.
 
 Endpoints:
-    POST   /documents                insert a document (chunked + embedded)
-    GET    /documents                list all chunks
+    POST   /documents                insert a raw text document (chunked + embedded)
+    POST   /documents/upload         upload & ingest PDF, DOCX, TXT, or MD files
+    GET    /documents                list all chunks with pagination and source metadata
     DELETE /documents/{id}           delete a chunk
     POST   /documents/search         semantic search (no LLM)
-
-All embedding operations go through OllamaClient → DocumentDB.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
 
 from api.dependencies import get_document_db, get_ollama
 from api.schemas.documents import (
@@ -21,9 +20,11 @@ from api.schemas.documents import (
     DocListItemResponse,
     DocSearchRequest,
     DocSearchResponse,
+    FileIngestResponse,
 )
 from api.services.document_service import (
     delete_document,
+    ingest_file,
     insert_document,
     search_documents,
 )
@@ -39,11 +40,10 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     "",
     response_model=DocInsertResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Insert a document",
+    summary="Insert a raw text document",
     description=(
         "Chunk the document text (250 words / 30 overlap), embed each chunk "
-        "via Ollama, and store in DocumentDB. "
-        "Mirrors C++ ``POST /doc/insert`` (main.cpp:980)."
+        "via Ollama, and store in DocumentDB."
     ),
 )
 def insert(
@@ -55,6 +55,40 @@ def insert(
     return DocInsertResponse(chunk_ids=chunk_ids, chunks=len(chunk_ids), dims=dims)
 
 
+# ── POST /documents/upload ────────────────────────────────────────────────────
+
+@router.post(
+    "/upload",
+    response_model=FileIngestResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload and ingest a file",
+    description=(
+        "Extract text from a PDF, DOCX, TXT, or Markdown file, chunk according to word boundaries, "
+        "generate vector embeddings with Ollama, and index into DocumentDB. "
+        "Returns chunk count, IDs, file details, and detected page boundaries."
+    ),
+)
+async def upload_file(
+    file: UploadFile = File(...),
+    doc_db: DocumentDB = Depends(get_document_db),
+    ollama: OllamaClient = Depends(get_ollama),
+) -> FileIngestResponse:
+    filename, file_type, size_bytes, chunk_ids, dims, pages_detected = await ingest_file(
+        doc_db=doc_db,
+        ollama=ollama,
+        file=file,
+    )
+    return FileIngestResponse(
+        filename=filename,
+        file_type=file_type,
+        size_bytes=size_bytes,
+        chunks_created=len(chunk_ids),
+        chunk_ids=chunk_ids,
+        dims=dims,
+        pages_detected=pages_detected,
+    )
+
+
 # ── GET /documents ────────────────────────────────────────────────────────────
 
 @router.get(
@@ -62,8 +96,7 @@ def insert(
     response_model=list[DocListItemResponse],
     summary="List all document chunks",
     description=(
-        "Return all stored chunks with a 120-character preview. "
-        "Mirrors C++ ``GET /doc/list`` (main.cpp:1010)."
+        "Return all stored chunks with a 120-character preview, page numbers, and chunk indices."
     ),
 )
 def list_documents(
@@ -75,6 +108,8 @@ def list_documents(
             title=doc.title,
             preview=doc.text[:120],
             words=len(doc.text.split()),
+            page_number=getattr(doc, "page_number", None),
+            chunk_index=getattr(doc, "chunk_index", 0),
         )
         for doc in doc_db.all()
     ]
@@ -86,10 +121,7 @@ def list_documents(
     "/{id_}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a document chunk",
-    description=(
-        "Remove a chunk by id. Returns 404 if not found. "
-        "Mirrors C++ ``GET /doc/remove`` (main.cpp:1040)."
-    ),
+    description="Remove a chunk by id. Returns 404 if not found.",
 )
 def delete(
     id_: int,
@@ -105,8 +137,7 @@ def delete(
     response_model=DocSearchResponse,
     summary="Semantic document search",
     description=(
-        "Embed the question via Ollama and return the k most relevant chunks "
-        "without calling the LLM. Mirrors C++ semantic retrieval step."
+        "Embed the question via Ollama and return the k most relevant chunks without calling the LLM."
     ),
 )
 def search(
@@ -122,6 +153,8 @@ def search(
                 title=doc.title,
                 text=doc.text,
                 distance=d,
+                page_number=getattr(doc, "page_number", None),
+                chunk_index=getattr(doc, "chunk_index", 0),
             )
             for d, doc in results
         ]

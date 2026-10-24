@@ -54,7 +54,14 @@ class DocumentDB:
 
     # ── PUBLIC ───────────────────────────────────────────────────────────
 
-    def insert(self, title: str, text: str, emb: np.ndarray) -> int:
+    def insert(
+        self,
+        title: str,
+        text: str,
+        emb: np.ndarray,
+        page_number: int | None = None,
+        chunk_index: int = 0,
+    ) -> int:
         """
         Embed a chunk and add it to both indexes.
 
@@ -65,7 +72,14 @@ class DocumentDB:
             emb = np.asarray(emb, dtype=np.float32)
             if self._dims == 0:
                 self._dims = int(emb.shape[0])
-            item = DocItem(id=self._next_id, title=title, text=text, emb=emb)
+            item = DocItem(
+                id=self._next_id,
+                title=title,
+                text=text,
+                emb=emb,
+                page_number=page_number,
+                chunk_index=chunk_index,
+            )
             self._next_id += 1
             self._store[item.id] = item
             vi = VectorItem(
