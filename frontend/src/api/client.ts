@@ -126,6 +126,12 @@ export const uploadDocument = (file: File): Promise<FileIngestResponse> => {
   });
 };
 
+export const seedDemoKnowledge = (): Promise<{ chunk_ids: number[]; chunks: number; dims: number }> => {
+  return apiClient<{ chunk_ids: number[]; chunks: number; dims: number }>('/documents/seed-demo', {
+    method: 'POST',
+  });
+};
+
 // ── Vector Endpoints ──────────────────────────────────────────────────────
 export interface VectorStats {
   count: number;

@@ -55,6 +55,23 @@ def insert(
     return DocInsertResponse(chunk_ids=chunk_ids, chunks=len(chunk_ids), dims=dims)
 
 
+@router.post(
+    "/seed-demo",
+    response_model=DocInsertResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Seed demo knowledge documents",
+    description="Seed the canonical 20 demo items into DocumentDB so semantic search and AI chat can be demonstrated immediately.",
+)
+def seed_demo_knowledge(
+    doc_db: DocumentDB = Depends(get_document_db),
+    ollama: OllamaClient = Depends(get_ollama),
+) -> DocInsertResponse:
+    from ingestion.demo_loader import _DEMO_ITEMS
+    demo_text = "\n\n".join(f"## {category.upper()}: {metadata}\n{metadata}" for metadata, category, _ in _DEMO_ITEMS)
+    chunk_ids, dims = insert_document(doc_db, ollama, title="Canonical Knowledge Collection", text=demo_text)
+    return DocInsertResponse(chunk_ids=chunk_ids, chunks=len(chunk_ids), dims=dims)
+
+
 # ── POST /documents/upload ────────────────────────────────────────────────────
 
 @router.post(

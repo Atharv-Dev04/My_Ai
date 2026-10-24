@@ -9,11 +9,13 @@ import {
   X,
   Info,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   getDocuments,
   deleteDocument,
+  seedDemoKnowledge,
   type DocListItem,
 } from '../api/client';
 import { Skeleton } from '../components/common/Skeleton';
@@ -45,6 +47,25 @@ export const DocumentsPage: React.FC = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Seeding demo knowledge state
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+  const [seedSuccess, setSeedSuccess] = useState<string | null>(null);
+
+  const handleSeedDemo = async () => {
+    setIsSeeding(true);
+    setError(null);
+    setSeedSuccess(null);
+    try {
+      const res = await seedDemoKnowledge();
+      setSeedSuccess(`Successfully indexed ${res.chunks} demo knowledge chunks (${res.dims}-D vectors) into DocumentDB!`);
+      await fetchDocs();
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to seed demo knowledge');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -186,6 +207,28 @@ export const DocumentsPage: React.FC = () => {
             Refresh
           </button>
 
+          <button
+            onClick={handleSeedDemo}
+            disabled={isSeeding || loading}
+            aria-label="Seed canonical demo knowledge"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.85rem',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--accent)',
+              backgroundColor: 'var(--accent-subtle, rgba(99, 102, 241, 0.1))',
+              color: 'var(--accent)',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              cursor: isSeeding ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <Sparkles size={13} style={{ animation: isSeeding ? 'spin 1s linear infinite' : 'none' }} />
+            {isSeeding ? 'Seeding Demo Data...' : 'Seed Demo Knowledge'}
+          </button>
+
           <Link
             to="/app/upload"
             style={{
@@ -205,6 +248,34 @@ export const DocumentsPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* ── Demo Seed Success Notification ─────────────────────────────── */}
+      {seedSuccess && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '0.85rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.65rem',
+            fontSize: '0.8125rem',
+            color: 'var(--success, #10b981)',
+            borderColor: 'rgba(16, 185, 129, 0.25)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Sparkles size={16} />
+            <span>{seedSuccess}</span>
+          </div>
+          <button
+            onClick={() => setSeedSuccess(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── Honest Backend Contract Notice ────────────────────────────── */}
       <div
