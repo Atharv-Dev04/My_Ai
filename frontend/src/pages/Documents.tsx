@@ -7,11 +7,13 @@ import {
   AlertTriangle,
   ArrowUpDown,
   X,
-  Info,
-  ExternalLink,
+  FileText,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   getDocuments,
   deleteDocument,
@@ -21,29 +23,32 @@ import {
 import { Skeleton } from '../components/common/Skeleton';
 import { ErrorState } from '../components/common/ErrorState';
 import { EmptyState } from '../components/common/EmptyState';
-import { Button } from '../components/common/Button';
+import { Badge } from '../components/common/Badge';
 
 type SortField = 'id' | 'title' | 'words';
 type SortOrder = 'asc' | 'desc';
+type FormatFilter = 'ALL' | 'PDF' | 'DOCX' | 'TXT' | 'MD';
 
 export const DocumentsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocListItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Search & filter
+  // Search, Filters & Sorting
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [formatFilter, setFormatFilter] = useState<FormatFilter>('ALL');
   const [sortField, setSortField] = useState<SortField>('id');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 8;
+  const pageSize = 10;
 
-  // Selected document for details drawer / preview
+  // Selected document for preview drawer
   const [selectedDoc, setSelectedDoc] = useState<DocListItem | null>(null);
 
-  // Destructive delete state
+  // Deletion modal state
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -51,21 +56,6 @@ export const DocumentsPage: React.FC = () => {
   // Seeding demo knowledge state
   const [isSeeding, setIsSeeding] = useState<boolean>(false);
   const [seedSuccess, setSeedSuccess] = useState<string | null>(null);
-
-  const handleSeedDemo = async () => {
-    setIsSeeding(true);
-    setError(null);
-    setSeedSuccess(null);
-    try {
-      const res = await seedDemoKnowledge();
-      setSeedSuccess(`Successfully indexed ${res.chunks} demo knowledge chunks (${res.dims}-D vectors) into DocumentDB!`);
-      await fetchDocs();
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Failed to seed demo knowledge');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -100,6 +90,21 @@ export const DocumentsPage: React.FC = () => {
     };
   }, []);
 
+  const handleSeedDemo = async () => {
+    setIsSeeding(true);
+    setError(null);
+    setSeedSuccess(null);
+    try {
+      const res = await seedDemoKnowledge();
+      setSeedSuccess(`Indexed ${res.chunks} demo knowledge chunks into DocumentDB!`);
+      await fetchDocs();
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to seed demo knowledge');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const handleDelete = async (id: number) => {
     setIsDeleting(true);
     setDeleteError(null);
@@ -117,14 +122,29 @@ export const DocumentsPage: React.FC = () => {
     }
   };
 
-  // Filter & Sort
+  // Helper to detect document format from title
+  const getDocFormat = (title: string): FormatFilter => {
+    const lower = title.toLowerCase();
+    if (lower.endsWith('.pdf')) return 'PDF';
+    if (lower.endsWith('.docx') || lower.endsWith('.doc')) return 'DOCX';
+    if (lower.endsWith('.txt')) return 'TXT';
+    if (lower.endsWith('.md')) return 'MD';
+    return 'TXT';
+  };
+
+  // Filtering by search query & format
   const filteredDocs = useMemo(() => {
     return documents.filter((doc) => {
-      const q = searchQuery.toLowerCase();
-      return doc.title.toLowerCase().includes(q) || doc.preview.toLowerCase().includes(q);
+      const matchesSearch =
+        doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.preview.toLowerCase().includes(searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
+      if (formatFilter === 'ALL') return true;
+      return getDocFormat(doc.title) === formatFilter;
     });
-  }, [documents, searchQuery]);
+  }, [documents, searchQuery, formatFilter]);
 
+  // Sorting
   const sortedDocs = useMemo(() => {
     return [...filteredDocs].sort((a, b) => {
       let comparison = 0;
@@ -139,7 +159,7 @@ export const DocumentsPage: React.FC = () => {
     });
   }, [filteredDocs, sortField, sortOrder]);
 
-  // Paginated records
+  // Pagination
   const totalPages = Math.max(1, Math.ceil(sortedDocs.length / pageSize));
   const paginatedDocs = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -156,8 +176,8 @@ export const DocumentsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', position: 'relative' }}>
-      {/* ── Page Header & Top Controls ────────────────────────────────── */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', position: 'relative' }}>
+      {/* ── Page Header & Actions ───────────────────────────────────────── */}
       <div
         style={{
           display: 'flex',
@@ -170,17 +190,17 @@ export const DocumentsPage: React.FC = () => {
         <div>
           <h1
             style={{
-              fontSize: '1.75rem',
+              fontSize: '1.65rem',
               fontWeight: 700,
               letterSpacing: '-0.025em',
-              marginBottom: '0.25rem',
               color: 'var(--text-primary)',
+              margin: '0 0 0.25rem 0',
             }}
           >
-            Knowledge Documents
+            Document Library
           </h1>
-          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            Inspect, search, and manage document chunks stored in DocumentDB.
+          <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+            Manage and inspect indexed knowledge chunks stored in DocumentDB.
           </p>
         </div>
 
@@ -188,7 +208,7 @@ export const DocumentsPage: React.FC = () => {
           <button
             onClick={fetchDocs}
             disabled={loading}
-            aria-label="Refresh documents"
+            aria-label="Refresh library"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -196,15 +216,15 @@ export const DocumentsPage: React.FC = () => {
               padding: '0.45rem 0.85rem',
               borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--border-subtle)',
-              backgroundColor: 'var(--bg-surface)',
+              backgroundColor: 'var(--bg-surface-solid)',
               color: 'var(--text-primary)',
-              fontSize: '0.8125rem',
+              fontSize: 'var(--text-sm)',
               fontWeight: 500,
               cursor: loading ? 'not-allowed' : 'pointer',
             }}
           >
             <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            Refresh
+            <span>Refresh</span>
           </button>
 
           <button
@@ -218,15 +238,15 @@ export const DocumentsPage: React.FC = () => {
               padding: '0.45rem 0.85rem',
               borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--accent)',
-              backgroundColor: 'var(--accent-subtle, rgba(99, 102, 241, 0.1))',
+              backgroundColor: 'var(--accent-light)',
               color: 'var(--accent)',
-              fontSize: '0.8125rem',
+              fontSize: 'var(--text-sm)',
               fontWeight: 600,
               cursor: isSeeding ? 'not-allowed' : 'pointer',
             }}
           >
             <Sparkles size={13} style={{ animation: isSeeding ? 'spin 1s linear infinite' : 'none' }} />
-            {isSeeding ? 'Seeding Demo Data...' : 'Seed Demo Knowledge'}
+            <span>{isSeeding ? 'Seeding...' : 'Seed Demo Knowledge'}</span>
           </button>
 
           <Link
@@ -239,12 +259,13 @@ export const DocumentsPage: React.FC = () => {
               color: 'var(--accent-foreground)',
               padding: '0.45rem 0.95rem',
               borderRadius: 'var(--radius-sm)',
-              fontSize: '0.8125rem',
+              fontSize: 'var(--text-sm)',
               fontWeight: 600,
               textDecoration: 'none',
             }}
           >
-            <Upload size={14} /> Ingest Document
+            <Upload size={14} />
+            <span>+ Upload</span>
           </Link>
         </div>
       </div>
@@ -252,16 +273,17 @@ export const DocumentsPage: React.FC = () => {
       {/* ── Demo Seed Success Notification ─────────────────────────────── */}
       {seedSuccess && (
         <div
-          className="glass-panel"
+          className="solid-panel"
           style={{
-            padding: '0.85rem 1.25rem',
+            padding: '0.75rem 1rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '0.65rem',
-            fontSize: '0.8125rem',
-            color: 'var(--success, #10b981)',
-            borderColor: 'rgba(16, 185, 129, 0.25)',
+            fontSize: 'var(--text-sm)',
+            color: 'var(--success)',
+            borderColor: 'rgba(45, 212, 191, 0.25)',
+            backgroundColor: 'var(--success-bg)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -277,29 +299,23 @@ export const DocumentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Honest Backend Contract Notice ────────────────────────────── */}
+      {/* ── Search & Filter Pills Bar (Reference Spec) ────────────────── */}
       <div
-        className="glass-panel"
+        className="solid-panel"
         style={{
-          padding: '0.85rem 1.25rem',
+          padding: '0.85rem 1rem',
           display: 'flex',
+          gap: '1rem',
+          flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '0.65rem',
-          fontSize: '0.8125rem',
-          color: 'var(--text-secondary)',
+          justifyContent: 'space-between',
+          backgroundColor: 'var(--bg-surface-solid)',
         }}
       >
-        <Info size={16} color="var(--accent)" />
-        <span>
-          <strong>Backend Contract: </strong> Documents are stored as semantic chunks (<code>GET /documents</code>, <code>DELETE /documents/{'{id}'}</code>). Document renaming and file re-processing are not exposed on the C++ port or FastAPI REST router and will be added with PostgreSQL document persistence.
-        </span>
-      </div>
-
-      {/* ── Search Bar & Filter Controls ──────────────────────────────── */}
-      <div className="solid-panel" style={{ padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '240px', maxWidth: '420px' }}>
+        {/* Search Bar */}
+        <div style={{ position: 'relative', flex: 1, minWidth: '220px', maxWidth: '380px' }}>
           <Search
-            size={16}
+            size={14}
             style={{
               position: 'absolute',
               left: '0.75rem',
@@ -315,24 +331,53 @@ export const DocumentsPage: React.FC = () => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Search by title or preview text..."
+            placeholder="Search documents or content..."
             style={{
               width: '100%',
               padding: '0.45rem 0.75rem 0.45rem 2.25rem',
               borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--border-subtle)',
-              backgroundColor: 'var(--bg-surface)',
+              backgroundColor: 'var(--bg-app)',
               color: 'var(--text-primary)',
-              fontSize: '0.85rem',
+              fontSize: 'var(--text-sm)',
+              outline: 'none',
             }}
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-          <span>
-            Showing {sortedDocs.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–
-            {Math.min(currentPage * pageSize, sortedDocs.length)} of {sortedDocs.length} chunks
-          </span>
+        {/* Format Filter Pills (Reference Board: All, PDF, DOCX, TXT, MD) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          {(['ALL', 'PDF', 'DOCX', 'TXT', 'MD'] as FormatFilter[]).map((fmt) => {
+            const active = formatFilter === fmt;
+            return (
+              <button
+                key={fmt}
+                onClick={() => {
+                  setFormatFilter(fmt);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: 'var(--radius-pill)',
+                  border: `1px solid ${active ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  backgroundColor: active ? 'var(--accent-light)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all var(--transition-fast)',
+                }}
+              >
+                {fmt}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Counter */}
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+          Showing {sortedDocs.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–
+          {Math.min(currentPage * pageSize, sortedDocs.length)} of {sortedDocs.length} chunks
         </div>
       </div>
 
@@ -355,49 +400,54 @@ export const DocumentsPage: React.FC = () => {
       ) : documents.length === 0 ? (
         <EmptyState
           title="Document Library is Empty"
-          description="No document chunks are currently indexed in DocumentDB. Upload your first text document to start semantic retrieval."
+          description="No document chunks are currently indexed in DocumentDB. Upload your first text document or seed demo data."
           action={{
             label: 'Ingest Document',
-            onClick: () => {
-              window.location.href = '/app/upload';
-            },
+            onClick: () => navigate('/app/upload'),
           }}
         />
       ) : sortedDocs.length === 0 ? (
         <EmptyState
-          title="No Matching Chunks Found"
-          description={`No document titles or chunk contents match "${searchQuery}".`}
+          title="No Matching Documents Found"
+          description={`No document titles or chunk contents match filter "${searchQuery}".`}
           action={{
-            label: 'Clear Search Filter',
-            onClick: () => setSearchQuery(''),
+            label: 'Clear Filter',
+            onClick: () => {
+              setSearchQuery('');
+              setFormatFilter('ALL');
+            },
           }}
         />
       ) : (
-        <div className="solid-panel" style={{ padding: '0', overflow: 'hidden' }}>
+        /* Compact Dark Document Rows (Matching Reference Board) */
+        <div className="solid-panel" style={{ padding: 0, overflow: 'hidden', backgroundColor: 'var(--bg-surface-solid)' }}>
           <div style={{ overflowX: 'auto' }}>
             <table
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
                 textAlign: 'left',
-                fontSize: '0.85rem',
+                fontSize: 'var(--text-sm)',
               }}
             >
               <thead>
                 <tr
                   style={{
                     borderBottom: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-surface-hover)',
+                    backgroundColor: 'var(--bg-surface-elevated)',
                     color: 'var(--text-muted)',
+                    fontSize: 'var(--text-xs)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
                   }}
                 >
                   <th
                     onClick={() => toggleSort('id')}
-                    style={{ padding: '0.75rem 1rem', cursor: 'pointer', userSelect: 'none' }}
+                    style={{ padding: '0.75rem 1rem', cursor: 'pointer', userSelect: 'none', width: '80px' }}
                   >
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span>Chunk ID</span>
-                      <ArrowUpDown size={12} />
+                      <span>ID</span>
+                      <ArrowUpDown size={11} />
                     </div>
                   </th>
                   <th
@@ -405,223 +455,274 @@ export const DocumentsPage: React.FC = () => {
                     style={{ padding: '0.75rem 1rem', cursor: 'pointer', userSelect: 'none' }}
                   >
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span>Title / Source</span>
-                      <ArrowUpDown size={12} />
+                      <span>Document Title</span>
+                      <ArrowUpDown size={11} />
                     </div>
                   </th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Preview Content</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Preview Snippet</th>
                   <th
                     onClick={() => toggleSort('words')}
-                    style={{ padding: '0.75rem 1rem', cursor: 'pointer', userSelect: 'none' }}
+                    style={{ padding: '0.75rem 1rem', cursor: 'pointer', userSelect: 'none', width: '130px' }}
                   >
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                       <span>Word Count</span>
-                      <ArrowUpDown size={12} />
+                      <ArrowUpDown size={11} />
                     </div>
                   </th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right', width: '100px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedDocs.map((doc) => (
-                  <tr
-                    key={doc.id}
-                    onClick={() => setSelectedDoc(doc)}
-                    style={{
-                      borderBottom: '1px solid var(--border-subtle)',
-                      backgroundColor: selectedDoc?.id === doc.id ? 'var(--accent-light)' : 'transparent',
-                      cursor: 'pointer',
-                      transition: 'background-color var(--transition-fast)',
-                    }}
-                  >
-                    <td style={{ padding: '0.75rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--accent)', fontWeight: 600 }}>
-                      #{doc.id}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {doc.title}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', maxWidth: '28rem' }}>
-                      {doc.preview}...
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>
-                      {doc.words} words
-                    </td>
-                    <td
-                      style={{ padding: '0.75rem 1rem', textAlign: 'right' }}
-                      onClick={(e) => e.stopPropagation()}
+                {paginatedDocs.map((doc) => {
+                  const isSelected = selectedDoc?.id === doc.id;
+                  const format = getDocFormat(doc.title);
+                  return (
+                    <tr
+                      key={doc.id}
+                      onClick={() => setSelectedDoc(doc)}
+                      style={{
+                        borderBottom: '1px solid var(--border-subtle)',
+                        backgroundColor: isSelected ? 'var(--accent-light)' : 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background-color var(--transition-fast)',
+                      }}
                     >
-                      <button
-                        onClick={() => setDeletingId(doc.id)}
-                        aria-label={`Delete chunk ${doc.id}`}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--text-muted)',
-                          cursor: 'pointer',
-                          padding: '0.35rem',
-                          borderRadius: 'var(--radius-sm)',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          transition: 'color var(--transition-fast)',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--error)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                      {/* ID */}
+                      <td style={{ padding: '0.75rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--accent)', fontWeight: 600 }}>
+                        #{doc.id}
+                      </td>
+
+                      {/* Title & Format Icon */}
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <div
+                            style={{
+                              padding: '0.35rem',
+                              borderRadius: 'var(--radius-xs)',
+                              backgroundColor: format === 'PDF' ? 'rgba(251, 113, 133, 0.12)' : 'var(--accent-light)',
+                              color: format === 'PDF' ? 'var(--error)' : 'var(--accent)',
+                              display: 'flex',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <FileText size={15} />
+                          </div>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', wordBreak: 'break-word' }}>
+                            {doc.title}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Preview Snippet */}
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', maxWidth: '32rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {doc.preview}
+                      </td>
+
+                      {/* Word Count */}
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>
+                        <Badge variant="neutral" size="sm">
+                          {doc.words} words
+                        </Badge>
+                      </td>
+
+                      {/* Actions */}
+                      <td
+                        style={{ padding: '0.75rem 1rem', textAlign: 'right' }}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <Trash2 size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.35rem' }}>
+                          <button
+                            onClick={() => setSelectedDoc(doc)}
+                            aria-label={`Preview chunk ${doc.id}`}
+                            title="Preview chunk details"
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: 'var(--text-secondary)',
+                              padding: '0.35rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                            }}
+                          >
+                            <Eye size={13} />
+                          </button>
+                          <button
+                            onClick={() => setDeletingId(doc.id)}
+                            aria-label={`Delete chunk ${doc.id}`}
+                            title="Delete chunk from DocumentDB"
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: 'var(--error)',
+                              padding: '0.35rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination bar */}
-          {totalPages > 1 && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
-                borderTop: '1px solid var(--border-subtle)',
-                backgroundColor: 'var(--bg-surface)',
-              }}
-            >
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={currentPage === 1}
+          {/* Pagination Controls */}
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTop: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-surface-elevated)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <div style={{ display: 'flex', gap: '0.35rem' }}>
+              <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                aria-label="Previous page"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  padding: '0.3rem 0.6rem',
+                  borderRadius: 'var(--radius-xs)',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-surface-solid)',
+                  color: 'var(--text-primary)',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  opacity: currentPage === 1 ? 0.5 : 1,
+                }}
               >
-                Previous
-              </Button>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={currentPage === totalPages}
+                <ChevronLeft size={13} />
+                <span>Prev</span>
+              </button>
+              <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                aria-label="Next page"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  padding: '0.3rem 0.6rem',
+                  borderRadius: 'var(--radius-xs)',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-surface-solid)',
+                  color: 'var(--text-primary)',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  opacity: currentPage === totalPages ? 0.5 : 1,
+                }}
               >
-                Next
-              </Button>
+                <span>Next</span>
+                <ChevronRight size={13} />
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* ── Slide-Over Document Details Drawer ────────────────────────── */}
+      {/* ── Document Details Preview Drawer ───────────────────────────── */}
       {selectedDoc && (
         <div
-          role="dialog"
-          aria-label="Document Chunk Details"
           className="solid-panel"
           style={{
             position: 'fixed',
-            bottom: '1.5rem',
             right: '1.5rem',
-            width: 'clamp(320px, 90vw, 480px)',
+            bottom: '1.5rem',
+            width: '420px',
+            maxWidth: 'calc(100vw - 3rem)',
             maxHeight: '80vh',
             overflowY: 'auto',
             padding: '1.5rem',
             boxShadow: 'var(--shadow-lg)',
-            zIndex: 60,
+            backgroundColor: 'var(--bg-surface-solid)',
+            zIndex: 40,
             border: '1px solid var(--border-strong)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--accent)', fontWeight: 600 }}>
-                CHUNK ID #{selectedDoc.id}
-              </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: '0.2rem 0', color: 'var(--text-primary)' }}>
-                {selectedDoc.title}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <FileText size={18} color="var(--accent)" />
+              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
+                Chunk #{selectedDoc.id} Preview
               </h3>
             </div>
             <button
               onClick={() => setSelectedDoc(null)}
-              aria-label="Close details drawer"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                padding: '0.25rem',
-              }}
+              aria-label="Close preview"
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-surface-hover)' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Word Count</div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>{selectedDoc.words} words</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Document Source</span>
+              <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
+                {selectedDoc.title}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Word Count</span>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
+                  {selectedDoc.words} words
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Detected Format</span>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--accent)' }}>
+                  {getDocFormat(selectedDoc.title)}
+                </div>
+              </div>
             </div>
 
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>Text Preview (Safe Plaintext)</div>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Indexed Content Snippet</span>
               <div
                 style={{
-                  padding: '0.85rem',
+                  marginTop: '0.35rem',
+                  padding: '0.75rem',
                   borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--bg-surface-hover)',
-                  fontSize: '0.8125rem',
-                  color: 'var(--text-primary)',
+                  backgroundColor: 'var(--bg-app)',
+                  border: '1px solid var(--border-subtle)',
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--text-secondary)',
                   lineHeight: 1.6,
-                  maxHeight: '160px',
-                  overflowY: 'auto',
                   whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  fontFamily: 'inherit',
+                  maxHeight: '220px',
+                  overflowY: 'auto',
                 }}
               >
                 {selectedDoc.preview}
               </div>
             </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-subtle)' }}>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setDeletingId(selectedDoc.id)}
-              >
-                <Trash2 size={14} /> Delete Chunk
-              </Button>
-              <Link
-                to="/app/chat"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0.4rem 0.8rem',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-secondary)',
-                  textDecoration: 'none',
-                  fontSize: '0.8125rem',
-                }}
-              >
-                Ask Questions with Context <ExternalLink size={12} />
-              </Link>
-            </div>
           </div>
         </div>
       )}
 
-      {/* ── Confirmation Modal for Destructive Delete ─────────────────── */}
+      {/* ── Delete Confirmation Dialog ────────────────────────────────── */}
       {deletingId !== null && (
         <div
-          role="alertdialog"
-          aria-modal="true"
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -632,55 +733,58 @@ export const DocumentsPage: React.FC = () => {
           <div
             className="solid-panel"
             style={{
+              padding: '1.75rem',
               maxWidth: '28rem',
               width: '100%',
-              padding: '1.5rem',
-              boxShadow: 'var(--shadow-lg)',
+              backgroundColor: 'var(--bg-surface-solid)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--error)', marginBottom: '0.75rem' }}>
               <AlertTriangle size={20} />
-              <h4 style={{ margin: 0, fontWeight: 700, fontSize: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>
                 Delete Document Chunk #{deletingId}?
-              </h4>
+              </h3>
             </div>
-
-            <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              This will remove chunk #{deletingId} from both the DocumentDB text store and the underlying HNSW vector graph index. This action is irreversible.
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              This chunk will be removed immediately from DocumentDB. This action cannot be undone.
             </p>
-
             {deleteError && (
-              <div
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--error)', marginBottom: '1rem' }}>
+                {deleteError}
+              </p>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => setDeletingId(null)}
+                disabled={isDeleting}
                 style={{
-                  padding: '0.5rem 0.75rem',
+                  padding: '0.45rem 0.95rem',
                   borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--error-bg)',
-                  color: 'var(--error)',
-                  fontSize: '0.8rem',
-                  marginBottom: '1rem',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-primary)',
+                  fontSize: 'var(--text-sm)',
+                  cursor: 'pointer',
                 }}
               >
-                {deleteError}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isDeleting}
-                onClick={() => setDeletingId(null)}
-              >
                 Cancel
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                isLoading={isDeleting}
+              </button>
+              <button
                 onClick={() => handleDelete(deletingId)}
+                disabled={isDeleting}
+                style={{
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  backgroundColor: 'var(--error)',
+                  color: '#ffffff',
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 600,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                }}
               >
-                Confirm Delete
-              </Button>
+                {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+              </button>
             </div>
           </div>
         </div>
