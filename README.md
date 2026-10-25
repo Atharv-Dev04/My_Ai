@@ -57,23 +57,9 @@ flowchart TD
 - **Full RAG Pipeline**: Ingests multi-format documents (PDF, DOCX, TXT, Markdown), performs sliding-window chunking, computes 768-D embeddings using local Ollama (`nomic-embed-text`), retrieves relevant chunks, and synthesizes answers via local LLMs (`llama3.2`).
 - **Relational Persistence & Auth**: Built on SQLAlchemy 2.x and Alembic migrations. Includes bcrypt password hashing, JWT bearer token authentication, ownership validation, and user isolation.
 - **Empirical Analytics & Benchmarking Dashboard**: Side-by-side performance comparison measuring index build time, median/p95 query latency, throughput, and Information Retrieval metrics (Recall@K, Precision@K, MRR).
-- **Glassmorphism Interface**: Clean, accessible UI adhering to WCAG standards with dark/light theme switching, telemetry banners, interactive citation inspectors, and responsive layouts.
-
----
-
-## Screenshots
-
-| Landing Page | Semantic Vector Search |
-|:---:|:---:|
-| ![Landing Page](docs/screenshots/01_landing_page.png) | ![Semantic Search](docs/screenshots/04_semantic_search.png) |
-
-| RAG AI Chat & Citations | Empirical Benchmarks & Evaluation |
-|:---:|:---:|
-| ![RAG Chat](docs/screenshots/05_rag_chat_citation.png) | ![Benchmarks](docs/screenshots/06_benchmarks_dashboard.png) |
-
-| Document Library & Seed Demo | User Profile & JWT State |
-|:---:|:---:|
-| ![Documents Library](docs/screenshots/03_documents_library.png) | ![User Profile](docs/screenshots/07_user_profile.png) |
+- **Glassmorphism & Dark-Professional Interface (v1.1)**: Premium developer workspace with deep blue-black backgrounds (`#071116`), layered charcoal surfaces (`#101d24`), fine cool-gray borders, restrained cyan accents (`#38bdf8`), and zero purple neon or fake decoration.
+- **Three-Panel Signature RAG Chat**: Full desktop workspace with left session history rail, central conversation with markdown/code blocks and bottom-pinned composer, and right collapsible sources/evidence panel.
+- **Route-Level Code Splitting**: 63% initial bundle optimization with React Suspense and lazy-loaded views.
 
 ---
 
@@ -83,7 +69,7 @@ flowchart TD
 - **Database**: PostgreSQL (production) or SQLite (local development)
 - **Vector Engine**: Custom Python implementation of Brute Force, KD-Tree, and HNSW
 - **Embeddings & LLM**: Ollama (`nomic-embed-text` for 768-D embeddings, `llama3.2` for generation)
-- **Frontend**: React 18, TypeScript, Vite, React Router 6, Lucide Icons, Recharts, Vanilla CSS Design System
+- **Frontend**: React 18, TypeScript, Vite, React Router 6, Lucide Icons, Recharts, Dark-Professional Vanilla CSS Design System
 
 ---
 

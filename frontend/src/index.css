@@ -238,3 +238,108 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Responsive & Accessibility Utilities (Tablet & Mobile Breakdown)
+   ───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .mobile-only {
+    display: flex !important;
+  }
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* Touch Targets: minimum 44px hit-box on mobile devices */
+@media (max-width: 768px) {
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+  button:not(.compact-btn), a.btn-link {
+    min-height: 40px;
+  }
+}
+
+/* Keyboard accessibility landmark skip-link helper */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+  z-index: 9999;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Purposeful Micro-Interactions (150–220ms, transform & opacity only)
+   ───────────────────────────────────────────────────────────────────────────── */
+/* Subtle button press feedback */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 80ms ease-out;
+}
+
+/* Short opacity & translate entrance for new result cards & messages */
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-entrance {
+  animation: fadeInSlideUp 180ms var(--ease-out) forwards;
+}
+
+/* Restrained pulse indicator for status and typing */
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: subtlePulse 1.8s ease-in-out infinite;
+}
+
+/* Smooth rotation for refresh/telemetry */
+@keyframes spinSmooth {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-smooth {
+  animation: spinSmooth 0.9s linear infinite;
+}
