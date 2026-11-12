@@ -302,7 +302,7 @@ export const ChatPage: React.FC = () => {
               position: 'relative',
               margin: '0.75rem 0',
               borderRadius: 'var(--radius-md)',
-              backgroundColor: '#050a0e',
+              backgroundColor: 'var(--bg-code)',
               border: '1px solid var(--border-subtle)',
               overflow: 'hidden',
             }}
@@ -313,7 +313,7 @@ export const ChatPage: React.FC = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '0.35rem 0.85rem',
-                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                backgroundColor: 'var(--bg-surface-hover)',
                 borderBottom: '1px solid var(--border-subtle)',
                 fontSize: '0.75rem',
                 fontFamily: 'var(--font-mono)',
@@ -367,7 +367,7 @@ export const ChatPage: React.FC = () => {
                   style={{
                     padding: '0.15rem 0.35rem',
                     borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                    backgroundColor: 'var(--bg-surface-hover)',
                     fontFamily: 'var(--font-mono)',
                     fontSize: '0.85em',
                     color: 'var(--accent)',
@@ -674,7 +674,7 @@ export const ChatPage: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: 'rgba(11, 15, 23, 0.4)',
+            backgroundColor: 'var(--bg-surface-elevated)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -1076,7 +1076,7 @@ export const ChatPage: React.FC = () => {
           style={{
             padding: '1rem 1.25rem',
             borderTop: '1px solid var(--border-subtle)',
-            backgroundColor: 'rgba(11, 15, 23, 0.6)',
+            backgroundColor: 'var(--bg-surface-elevated)',
           }}
         >
           <form onSubmit={handleSendMessage} style={{ position: 'relative' }}>

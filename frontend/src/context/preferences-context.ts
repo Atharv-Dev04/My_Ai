@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 
-export type Theme = 'light' | 'dark';
+export type Theme = 'dark' | 'light' | 'glass' | 'warm';
 export type Density = 'comfortable' | 'compact';
 export type DefaultAlgorithm = 'hnsw' | 'kdtree' | 'bruteforce';
 export type DefaultMetric = 'cosine' | 'euclidean' | 'manhattan';

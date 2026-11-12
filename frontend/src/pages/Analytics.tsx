@@ -587,7 +587,7 @@ export const AnalyticsPage: React.FC = () => {
             <div style={{ width: '100%', height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={latencyChartData} margin={{ top: 10, right: 20, left: 10, bottom: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis
                     dataKey="name"
                     stroke="var(--text-muted)"
@@ -602,7 +602,7 @@ export const AnalyticsPage: React.FC = () => {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--bg-surface)',
+                      backgroundColor: 'var(--bg-surface-solid)',
                       border: '1px solid var(--border-strong)',
                       borderRadius: 'var(--radius-md)',
                       fontSize: '0.75rem',
@@ -611,11 +611,11 @@ export const AnalyticsPage: React.FC = () => {
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '10px' }} />
-                  {/* Restrained palette: neutral slate, amber, bright cyan, deep indigo */}
-                  <Bar dataKey="Python BF (med)" fill="#64748b" name="BruteForce (med)" />
-                  <Bar dataKey="Python KD (med)" fill="#f59e0b" name="KD-Tree (med)" />
-                  <Bar dataKey="Python HNSW (med)" fill="#38bdf8" name="HNSW (med)" />
-                  <Bar dataKey="Python HNSW (p95)" fill="#2563eb" name="HNSW (p95)" />
+                  {/* Semantic theme-aware palette */}
+                  <Bar dataKey="Python BF (med)" fill="var(--chart-series-1)" name="BruteForce (med)" />
+                  <Bar dataKey="Python KD (med)" fill="var(--chart-series-2)" name="KD-Tree (med)" />
+                  <Bar dataKey="Python HNSW (med)" fill="var(--chart-series-3)" name="HNSW (med)" />
+                  <Bar dataKey="Python HNSW (p95)" fill="var(--chart-series-4)" name="HNSW (p95)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -647,7 +647,7 @@ export const AnalyticsPage: React.FC = () => {
             <div style={{ width: '100%', height: 280 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={buildTimeChartData} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} />
                   <YAxis
                     stroke="var(--text-muted)"
@@ -656,7 +656,7 @@ export const AnalyticsPage: React.FC = () => {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--bg-surface)',
+                      backgroundColor: 'var(--bg-surface-solid)',
                       border: '1px solid var(--border-strong)',
                       borderRadius: 'var(--radius-md)',
                       fontSize: '0.75rem',
@@ -665,8 +665,8 @@ export const AnalyticsPage: React.FC = () => {
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '10px' }} />
-                  <Bar dataKey="Python KD" fill="#f59e0b" name="KD-Tree Build (s)" />
-                  <Bar dataKey="Python HNSW" fill="#38bdf8" name="HNSW Build (s)" />
+                  <Bar dataKey="Python KD" fill="var(--chart-series-2)" name="KD-Tree Build (s)" />
+                  <Bar dataKey="Python HNSW" fill="var(--chart-series-3)" name="HNSW Build (s)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

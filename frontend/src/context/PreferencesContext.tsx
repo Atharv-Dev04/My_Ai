@@ -17,10 +17,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch {
       // ignore
     }
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Use Dark Professional as the first-visit default per architectural spec
     return {
       ...defaultPreferences,
-      theme: prefersDark ? 'dark' : 'light',
+      theme: 'dark',
     };
   });
 
@@ -43,10 +43,18 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const toggleTheme = () => {
-    setPreferencesState((prev) => ({
-      ...prev,
-      theme: prev.theme === 'light' ? 'dark' : 'light',
-    }));
+    setPreferencesState((prev) => {
+      const cycle: Record<string, typeof prev.theme> = {
+        dark: 'light',
+        light: 'warm',
+        warm: 'glass',
+        glass: 'dark',
+      };
+      return {
+        ...prev,
+        theme: cycle[prev.theme] || 'dark',
+      };
+    });
   };
 
   return (
