@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Sliders,
-  Moon,
-  Sun,
   Server,
   Trash2,
   Check,
@@ -181,58 +179,227 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Theme Selector */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Visual Color Palette
+          {/* Theme Variations: 4 Visual Cards matching screenshot */}
+          <div>
+            <div style={{ marginBottom: '0.85rem' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Theme Variations
               </div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                Dark-professional slate mode with restrained cyan accents or high-contrast light mode.
+                Choose the look that fits you
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => handleChange('theme', 'dark')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.45rem 0.95rem',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: `1px solid ${draft.theme === 'dark' ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                  backgroundColor: draft.theme === 'dark' ? 'var(--accent-light)' : 'var(--bg-canvas)',
-                  color: draft.theme === 'dark' ? 'var(--accent)' : 'var(--text-secondary)',
-                  transition: 'all var(--transition-fast)',
-                }}
-              >
-                <Moon size={14} /> Dark Professional
-              </button>
-              <button
-                type="button"
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '1rem',
+              }}
+            >
+              {/* Option 1: Light Minimal */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Select Light Minimal theme"
                 onClick={() => handleChange('theme', 'light')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleChange('theme', 'light');
+                  }
+                }}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.45rem 0.95rem',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
                   cursor: 'pointer',
-                  border: `1px solid ${draft.theme === 'light' ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                  backgroundColor: draft.theme === 'light' ? 'var(--accent-light)' : 'var(--bg-canvas)',
-                  color: draft.theme === 'light' ? 'var(--accent)' : 'var(--text-secondary)',
-                  transition: 'all var(--transition-fast)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
                 }}
               >
-                <Sun size={14} /> Light Canvas
-              </button>
+                <div
+                  style={{
+                    height: '110px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: draft.theme === 'light' ? '2px solid var(--accent)' : '1px solid var(--border-subtle)',
+                    boxShadow: draft.theme === 'light' ? '0 0 0 2px var(--accent-light)' : 'none',
+                    backgroundColor: '#f4f7fa',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all var(--transition-fast)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#1769aa' }} />
+                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: '#eaf0f5' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d8e1e8' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d8e1e8' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d8e1e8' }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Light Minimal</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clean and elegant</div>
+                </div>
+              </div>
+
+              {/* Option 2: Dark Professional */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Select Dark Professional theme"
+                onClick={() => handleChange('theme', 'dark')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleChange('theme', 'dark');
+                  }
+                }}
+                style={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                }}
+              >
+                <div
+                  style={{
+                    height: '110px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: draft.theme === 'dark' ? '2px solid #159be8' : '1px solid var(--border-subtle)',
+                    boxShadow: draft.theme === 'dark' ? '0 0 0 2px rgba(21, 155, 232, 0.25)' : 'none',
+                    backgroundColor: '#071116',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all var(--transition-fast)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#159be8' }} />
+                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: '#142630' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#101d24', border: '1px solid #263944' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#101d24', border: '1px solid #263944' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#101d24', border: '1px solid #263944' }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Dark Professional</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Focused and modern</div>
+                </div>
+              </div>
+
+              {/* Option 3: Glass Subtle */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Select Glass Subtle theme"
+                onClick={() => handleChange('theme', 'glass')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleChange('theme', 'glass');
+                  }
+                }}
+                style={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                }}
+              >
+                <div
+                  style={{
+                    height: '110px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: draft.theme === 'glass' ? '2px solid #55bdeb' : '1px solid var(--border-subtle)',
+                    boxShadow: draft.theme === 'glass' ? '0 0 0 2px rgba(85, 189, 235, 0.25)' : 'none',
+                    background: 'linear-gradient(135deg, #101c25 0%, #172833 100%)',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all var(--transition-fast)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#55bdeb' }} />
+                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: 'rgba(205, 225, 238, 0.2)' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: 'rgba(23, 40, 51, 0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(205, 225, 238, 0.2)' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: 'rgba(23, 40, 51, 0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(205, 225, 238, 0.2)' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: 'rgba(23, 40, 51, 0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(205, 225, 238, 0.2)' }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Glass Subtle</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Translucent and layered</div>
+                </div>
+              </div>
+
+              {/* Option 4: Warm Neutral */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Select Warm Neutral theme"
+                onClick={() => handleChange('theme', 'warm')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleChange('theme', 'warm');
+                  }
+                }}
+                style={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                }}
+              >
+                <div
+                  style={{
+                    height: '110px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: draft.theme === 'warm' ? '2px solid #355c68' : '1px solid var(--border-subtle)',
+                    boxShadow: draft.theme === 'warm' ? '0 0 0 2px rgba(53, 92, 104, 0.25)' : 'none',
+                    backgroundColor: '#f4efe7',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all var(--transition-fast)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#355c68' }} />
+                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: '#eae1d5' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#fffcf6', border: '1px solid #d9cebf' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#fffcf6', border: '1px solid #d9cebf' }} />
+                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#fffcf6', border: '1px solid #d9cebf' }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Warm Neutral</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Soft and refined</div>
+                </div>
+              </div>
             </div>
           </div>
 

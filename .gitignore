@@ -53,6 +53,7 @@ Thumbs.db
 desktop.ini
 VectorMind AI Knowledge Dashboard.png
 reference*.png
+Gemini_Generated_Image*.png
 
 # ── Node / frontend (future tasks) ──────────────────────────────────────
 node_modules/

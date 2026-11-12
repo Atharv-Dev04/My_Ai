@@ -456,7 +456,7 @@ export const SearchPage: React.FC = () => {
           gap: '0.75rem',
           fontSize: '0.8125rem',
           color: 'var(--text-secondary)',
-          backgroundColor: 'rgba(16, 29, 36, 0.45)',
+          backgroundColor: 'var(--bg-surface-elevated)',
           border: '1px solid var(--border-subtle)',
         }}
       >
