@@ -132,6 +132,16 @@ export const seedDemoKnowledge = (): Promise<{ chunk_ids: number[]; chunks: numb
   });
 };
 
+export const insertDocument = (
+  title: string,
+  text: string
+): Promise<{ chunk_ids: number[]; chunks: number; dims: number }> => {
+  return apiClient<{ chunk_ids: number[]; chunks: number; dims: number }>('/documents', {
+    method: 'POST',
+    body: JSON.stringify({ title, text }),
+  });
+};
+
 // ── Vector Endpoints ──────────────────────────────────────────────────────
 export interface VectorStats {
   count: number;

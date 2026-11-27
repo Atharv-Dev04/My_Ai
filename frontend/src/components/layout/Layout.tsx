@@ -1,142 +1,124 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import {
-  Home,
-  Search,
   MessageSquare,
-  FileText,
-  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
-  Sun,
-  Moon,
   Menu,
   X,
   Database,
-  ExternalLink,
   LogIn,
   LogOut,
-  Clock,
+  Plus,
+  Trash2,
 } from 'lucide-react';
-import { useTheme } from '../../context/useTheme';
 import { useAuth } from '../../context/auth-context';
 import { AuthModal } from '../auth/AuthModal';
-import { getDocuments, type DocListItem } from '../../api/client';
-import { Badge } from '../common/Badge';
-
-interface NavItem {
-  name: string;
-  path: string;
-  icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
-  exact?: boolean;
-}
-
-const mainNavItems: NavItem[] = [
-  { name: 'Home', path: '/app', icon: Home, exact: true },
-  { name: 'Search', path: '/app/search', icon: Search },
-  { name: 'Chat', path: '/app/chat', icon: MessageSquare },
-  { name: 'Documents', path: '/app/documents', icon: FileText },
-  { name: 'Analytics', path: '/app/analytics', icon: BarChart3 },
-  { name: 'Settings', path: '/app/settings', icon: Settings },
-];
+import {
+  listConversations,
+  createConversation,
+  deleteConversation,
+  type ConversationSummary,
+} from '../../api/client';
 
 export const Layout: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [recentDocs, setRecentDocs] = useState<DocListItem[]>([]);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Load real recently indexed documents for sidebar
+  // Load user conversations for the left sidebar
+  const fetchConversations = async () => {
+    try {
+      const convs = await listConversations();
+      setConversations(convs);
+    } catch {
+      // Quiet fallback for guest
+    }
+  };
+
   useEffect(() => {
-    let mounted = true;
-    getDocuments()
-      .then((docs) => {
-        if (mounted) {
-          // Take top 3 unique document titles
-          const seen = new Set<string>();
-          const unique: DocListItem[] = [];
-          for (const doc of docs) {
-            if (!seen.has(doc.title)) {
-              seen.add(doc.title);
-              unique.push(doc);
-              if (unique.length >= 3) break;
-            }
-          }
-          setRecentDocs(unique);
-        }
-      })
-      .catch(() => {
-        // Quiet fail, empty recent state
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [location.pathname]);
+    fetchConversations();
+  }, [location.pathname, user]);
 
   const [prevPath, setPrevPath] = useState(location.pathname);
-
-  // Close mobile drawer if location changes
   if (location.pathname !== prevPath) {
     setPrevPath(location.pathname);
     setMobileMenuOpen(false);
   }
 
-  // Global search keyboard shortcut: Ctrl+K or Cmd+K
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        navigate('/app/search');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigate]);
+  const handleNewChat = async () => {
+    try {
+      await createConversation('New Chat');
+      await fetchConversations();
+    } catch {
+      // Fallback
+    }
+    navigate('/');
+    // Trigger window custom event for ChatPage to reset input/session
+    window.dispatchEvent(new CustomEvent('vectormind:new-chat'));
+  };
+
+  const handleDeleteConv = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    try {
+      await deleteConversation(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      window.dispatchEvent(new CustomEvent('vectormind:deleted-chat', { detail: { id } }));
+    } catch {
+      // Quiet error
+    }
+  };
+
+  const handleSelectConv = (id: number) => {
+    navigate('/');
+    window.dispatchEvent(new CustomEvent('vectormind:select-chat', { detail: { id } }));
+  };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: 'var(--bg-app)' }}>
-      {/* ── Left Sidebar (Desktop) ────────────────────────────────────────── */}
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: '#000000', color: '#ffffff' }}>
+      {/* ── Left Sidebar (ChatGPT / Claude style) ────────────────────────── */}
       <aside
         className="desktop-sidebar"
         style={{
-          width: isCollapsed ? '72px' : '250px',
-          backgroundColor: 'var(--bg-surface-solid)',
-          borderRight: '1px solid var(--border-subtle)',
+          width: isCollapsed ? '64px' : '260px',
+          backgroundColor: '#0a0a0a',
+          borderRight: '1px solid #262626',
           display: 'flex',
           flexDirection: 'column',
           position: 'sticky',
           top: 0,
           height: '100vh',
           zIndex: 40,
-          transition: 'width var(--transition-normal)',
+          transition: 'width 0.2s ease',
           overflow: 'hidden',
+          flexShrink: 0,
         }}
         aria-label="Application Sidebar"
       >
         {/* Brand Header */}
         <div
           style={{
-            padding: isCollapsed ? '1rem 0.5rem' : '1.15rem 1.25rem',
+            padding: isCollapsed ? '1rem 0.5rem' : '1rem 1.25rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: isCollapsed ? 'center' : 'space-between',
-            borderBottom: '1px solid var(--border-subtle)',
-            minHeight: '64px',
+            borderBottom: '1px solid #1f1f1f',
+            minHeight: '56px',
           }}
         >
           <Link
-            to="/app"
+            to="/"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.65rem',
               textDecoration: 'none',
-              color: 'inherit',
+              color: '#ffffff',
               overflow: 'hidden',
             }}
           >
@@ -144,27 +126,22 @@ export const Layout: React.FC = () => {
               style={{
                 width: '32px',
                 height: '32px',
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: 'var(--accent-light)',
-                color: 'var(--accent)',
+                borderRadius: '8px',
+                backgroundColor: '#171717',
+                border: '1px solid #333333',
+                color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                border: '1px solid rgba(56, 189, 248, 0.2)',
               }}
             >
-              <Database size={18} />
+              <Database size={17} />
             </div>
             {!isCollapsed && (
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-                <span style={{ fontWeight: 700, fontSize: '0.975rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-                  VectorMind
-                </span>
-                <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-                  v1.1 Workspace
-                </span>
-              </div>
+              <span style={{ fontWeight: 700, fontSize: '0.95rem', letterSpacing: '-0.02em', color: '#ffffff' }}>
+                VectorMind
+              </span>
             )}
           </Link>
 
@@ -172,16 +149,17 @@ export const Layout: React.FC = () => {
             <button
               onClick={() => setIsCollapsed(true)}
               aria-label="Collapse sidebar"
-              className="sidebar-collapse-btn"
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--text-muted)',
+                color: '#737373',
                 cursor: 'pointer',
                 display: 'flex',
                 padding: '0.25rem',
-                borderRadius: 'var(--radius-xs)',
+                borderRadius: '4px',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#737373')}
             >
               <ChevronLeft size={16} />
             </button>
@@ -197,23 +175,53 @@ export const Layout: React.FC = () => {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--text-muted)',
+                color: '#737373',
                 cursor: 'pointer',
                 display: 'flex',
                 padding: '0.25rem',
-                borderRadius: 'var(--radius-xs)',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#737373')}
             >
               <ChevronRight size={16} />
             </button>
           </div>
         )}
 
-        {/* Navigation Items */}
+        {/* New Chat Button */}
+        <div style={{ padding: isCollapsed ? '0.75rem 0.5rem' : '0.85rem 1rem 0.5rem 1rem' }}>
+          <button
+            onClick={handleNewChat}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
+              gap: '0.55rem',
+              padding: isCollapsed ? '0.6rem 0' : '0.6rem 0.85rem',
+              borderRadius: '8px',
+              border: '1px solid #333333',
+              backgroundColor: '#141414',
+              color: '#ffffff',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1f1f1f')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#141414')}
+            title="New Chat"
+          >
+            <Plus size={16} />
+            {!isCollapsed && <span>New chat</span>}
+          </button>
+        </div>
+
+        {/* Navigation / Chat Sessions List */}
         <nav
           style={{
             flex: 1,
-            padding: isCollapsed ? '0.75rem 0.4rem' : '0.85rem 0.75rem',
+            padding: isCollapsed ? '0.5rem 0.4rem' : '0.5rem 0.75rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.25rem',
@@ -222,98 +230,127 @@ export const Layout: React.FC = () => {
           }}
           aria-label="Primary Navigation"
         >
-          {mainNavItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.exact}
-                title={isCollapsed ? item.name : undefined}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: isCollapsed ? 'center' : 'flex-start',
-                  gap: '0.75rem',
-                  padding: isCollapsed ? '0.65rem 0' : '0.55rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: 'var(--text-base)',
-                  fontWeight: isActive ? 600 : 500,
-                  textDecoration: 'none',
-                  color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                  backgroundColor: isActive ? 'var(--accent-light)' : 'transparent',
-                  border: isActive ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid transparent',
-                  transition: 'all var(--transition-fast)',
-                })}
-              >
-                <Icon size={17} style={{ flexShrink: 0 }} />
-                {!isCollapsed && <span>{item.name}</span>}
-              </NavLink>
-            );
-          })}
+          {/* Main App Links */}
+          <NavLink
+            to="/"
+            end
+            title={isCollapsed ? 'Chat' : undefined}
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
+              gap: '0.65rem',
+              padding: isCollapsed ? '0.6rem 0' : '0.5rem 0.75rem',
+              borderRadius: '6px',
+              fontSize: '0.8125rem',
+              fontWeight: isActive ? 600 : 400,
+              textDecoration: 'none',
+              color: isActive ? '#ffffff' : '#a3a3a3',
+              backgroundColor: isActive ? '#1c1c1c' : 'transparent',
+              border: `1px solid ${isActive ? '#333333' : 'transparent'}`,
+              transition: 'all 0.15s ease',
+            })}
+          >
+            <MessageSquare size={16} style={{ flexShrink: 0 }} />
+            {!isCollapsed && <span>Chat</span>}
+          </NavLink>
 
-          {/* Real Recently Viewed / Indexed Documents (Reference Board) */}
-          {!isCollapsed && recentDocs.length > 0 && (
-            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+          <NavLink
+            to="/settings"
+            title={isCollapsed ? 'Settings' : undefined}
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
+              gap: '0.65rem',
+              padding: isCollapsed ? '0.6rem 0' : '0.5rem 0.75rem',
+              borderRadius: '6px',
+              fontSize: '0.8125rem',
+              fontWeight: isActive ? 600 : 400,
+              textDecoration: 'none',
+              color: isActive ? '#ffffff' : '#a3a3a3',
+              backgroundColor: isActive ? '#1c1c1c' : 'transparent',
+              border: `1px solid ${isActive ? '#333333' : 'transparent'}`,
+              transition: 'all 0.15s ease',
+            })}
+          >
+            <Settings size={16} style={{ flexShrink: 0 }} />
+            {!isCollapsed && <span>Settings</span>}
+          </NavLink>
+
+          {/* Past Conversations List (if not collapsed) */}
+          {!isCollapsed && conversations.length > 0 && (
+            <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid #1f1f1f' }}>
               <div
                 style={{
-                  fontSize: 'var(--text-xs)',
+                  fontSize: '0.725rem',
                   fontWeight: 600,
-                  color: 'var(--text-muted)',
+                  color: '#737373',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
-                  padding: '0 0.75rem 0.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
+                  padding: '0 0.5rem 0.5rem',
                 }}
               >
-                <Clock size={12} />
-                <span>Recently Indexed</span>
+                Recent Chats
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                {recentDocs.map((doc) => (
-                  <Link
-                    key={doc.id}
-                    to="/app/documents"
-                    title={doc.title}
+                {conversations.slice(0, 8).map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => handleSelectConv(conv.id)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.4rem 0.75rem',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--text-secondary)',
-                      textDecoration: 'none',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      justifyContent: 'space-between',
+                      padding: '0.45rem 0.65rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8125rem',
+                      color: '#a3a3a3',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s ease',
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#141414')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     <span
                       style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--accent)',
-                        flexShrink: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '170px',
                       }}
-                    />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.title}</span>
-                  </Link>
+                    >
+                      {conv.title || 'Conversation'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteConv(e, conv.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#525252',
+                        cursor: 'pointer',
+                        padding: '0.15rem',
+                        display: 'flex',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = '#525252')}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
           )}
         </nav>
 
-        {/* User Profile / Auth Area in Sidebar */}
+        {/* User Profile / Auth Footer */}
         <div
           style={{
             padding: isCollapsed ? '0.75rem 0.4rem' : '0.85rem 1rem',
-            borderTop: '1px solid var(--border-subtle)',
-            backgroundColor: 'var(--bg-surface-elevated)',
+            borderTop: '1px solid #1f1f1f',
+            backgroundColor: '#050505',
             display: 'flex',
             alignItems: 'center',
             justifyContent: isCollapsed ? 'center' : 'space-between',
@@ -323,7 +360,7 @@ export const Layout: React.FC = () => {
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden', width: '100%' }}>
               <Link
-                to="/app/profile"
+                to="/settings"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -339,26 +376,26 @@ export const Layout: React.FC = () => {
                     width: '28px',
                     height: '28px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--accent-light)',
-                    color: 'var(--accent)',
+                    backgroundColor: '#1f1f1f',
+                    color: '#ffffff',
+                    border: '1px solid #333333',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 600,
-                    fontSize: 'var(--text-xs)',
+                    fontSize: '0.75rem',
                     flexShrink: 0,
-                    border: '1px solid rgba(56, 189, 248, 0.25)',
                   }}
                 >
                   {(user.full_name || user.email)[0].toUpperCase()}
                 </div>
                 {!isCollapsed && (
                   <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, overflow: 'hidden' }}>
-                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {user.full_name || user.email.split('@')[0]}
                     </span>
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      Authenticated
+                    <span style={{ fontSize: '0.7rem', color: '#737373' }}>
+                      {user.email}
                     </span>
                   </div>
                 )}
@@ -372,246 +409,129 @@ export const Layout: React.FC = () => {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: 'var(--text-muted)',
+                    color: '#737373',
                     cursor: 'pointer',
                     padding: '0.25rem',
-                    borderRadius: 'var(--radius-xs)',
                     display: 'flex',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#737373')}
                 >
                   <LogOut size={15} />
                 </button>
               )}
             </div>
           ) : (
-            <button
-              onClick={() => setAuthModalOpen(true)}
+            <Link
+              to="/login"
               style={{
                 width: '100%',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.4rem',
-                padding: '0.45rem 0.75rem',
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: 'var(--accent)',
-                color: 'var(--accent-foreground)',
-                fontSize: 'var(--text-sm)',
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff',
+                color: '#000000',
+                fontSize: '0.8125rem',
                 fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
+                textDecoration: 'none',
               }}
             >
               <LogIn size={14} />
               {!isCollapsed && <span>Sign In</span>}
-            </button>
+            </Link>
           )}
         </div>
       </aside>
 
-      {/* ── Main Application Workspace ────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: 'var(--bg-app)' }}>
-        {/* Top Header & Search Shortcut Bar */}
+      {/* ── Main Application Workspace (Outlet) ───────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: '#000000' }}>
+        {/* Mobile Header Bar (< 768px) */}
         <header
+          className="mobile-header"
           style={{
-            height: '56px',
-            borderBottom: '1px solid var(--border-subtle)',
-            backgroundColor: 'var(--bg-surface-solid)',
-            display: 'flex',
+            height: '48px',
+            borderBottom: '1px solid #1f1f1f',
+            backgroundColor: '#0a0a0a',
+            display: 'none',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 1.5rem',
-            position: 'sticky',
-            top: 0,
-            zIndex: 30,
+            padding: '0 1rem',
           }}
         >
-          {/* Left: Mobile Toggle & Global Search Shortcut */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, maxWidth: '480px' }}>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle mobile navigation menu"
-              className="mobile-toggle"
-              style={{
-                display: 'none',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-primary)',
-                padding: '0.35rem',
-                cursor: 'pointer',
-              }}
-            >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-
-            {/* Functional Global Search Shortcut Bar */}
-            <div
-              onClick={() => navigate('/app/search')}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  navigate('/app/search');
-                }
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                maxWidth: '360px',
-                padding: '0.35rem 0.75rem',
-                borderRadius: 'var(--radius-pill)',
-                backgroundColor: 'var(--bg-surface-hover)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-muted)',
-                fontSize: 'var(--text-sm)',
-                cursor: 'pointer',
-                transition: 'border-color var(--transition-fast)',
-              }}
-              aria-label="Search knowledge base (Ctrl+K)"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Search size={14} color="var(--text-muted)" />
-                <span>Search knowledge base...</span>
-              </div>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.6875rem',
-                  padding: '0.1rem 0.4rem',
-                  borderRadius: 'var(--radius-xs)',
-                  backgroundColor: 'var(--bg-surface-solid)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                Ctrl K
-              </span>
-            </div>
-          </div>
-
-          {/* Right: API Telemetry & Theme Switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <Badge variant="cyan" size="sm" dot>
-              <span>API :8000</span>
-            </Badge>
-
-            <Link
-              to="/"
-              style={{
-                fontSize: 'var(--text-xs)',
-                color: 'var(--text-muted)',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-              }}
-            >
-              <span>Site</span>
-              <ExternalLink size={11} />
-            </Link>
-
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle color theme"
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.35rem',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'border-color var(--transition-fast)',
-              }}
-            >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-          </div>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ffffff',
+              cursor: 'pointer',
+              padding: '0.25rem',
+            }}
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>VectorMind</span>
+          <div style={{ width: 24 }} />
         </header>
 
-        {/* ── Mobile Navigation Drawer ───────────────────────────────────── */}
+        {/* Mobile Drawer */}
         {mobileMenuOpen && (
           <div
             style={{
               position: 'fixed',
-              top: '56px',
+              top: '48px',
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'var(--bg-surface-solid)',
+              backgroundColor: '#0a0a0a',
               zIndex: 50,
               padding: '1.25rem 1rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.5rem',
-              overflowY: 'auto',
             }}
           >
-            {mainNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  end={item.exact}
-                  style={({ isActive }) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 'var(--text-base)',
-                    fontWeight: isActive ? 600 : 500,
-                    textDecoration: 'none',
-                    color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                    backgroundColor: isActive ? 'var(--accent-light)' : 'transparent',
-                  })}
-                >
-                  <Icon size={18} />
-                  <span>{item.name}</span>
-                </NavLink>
-              );
-            })}
+            <button
+              onClick={handleNewChat}
+              style={{
+                padding: '0.65rem 1rem',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff',
+                color: '#000000',
+                fontWeight: 600,
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <Plus size={16} /> New Chat
+            </button>
+            <NavLink
+              to="/"
+              style={{ padding: '0.65rem 1rem', color: '#ffffff', textDecoration: 'none', fontSize: '0.9rem' }}
+            >
+              Chat Interface
+            </NavLink>
+            <NavLink
+              to="/settings"
+              style={{ padding: '0.65rem 1rem', color: '#ffffff', textDecoration: 'none', fontSize: '0.9rem' }}
+            >
+              Settings & Profile
+            </NavLink>
           </div>
         )}
 
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-        />
-
-        {/* ── Routed Content Container ───────────────────────────────────── */}
-        <main
-          className="main-container"
-          style={{
-            flex: 1,
-            padding: '1.75rem 2rem',
-            maxWidth: '1360px',
-            width: '100%',
-            margin: '0 auto',
-          }}
-        >
+        {/* Page Content */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <Outlet />
-        </main>
+        </div>
       </div>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .desktop-sidebar {
-            display: none !important;
-          }
-          .mobile-toggle {
-            display: flex !important;
-          }
-          .main-container {
-            padding: 1.25rem 1rem !important;
-          }
-        }
-      `}</style>
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 };

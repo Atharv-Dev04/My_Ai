@@ -43,18 +43,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const toggleTheme = () => {
-    setPreferencesState((prev) => {
-      const cycle: Record<string, typeof prev.theme> = {
-        dark: 'light',
-        light: 'warm',
-        warm: 'glass',
-        glass: 'dark',
-      };
-      return {
-        ...prev,
-        theme: cycle[prev.theme] || 'dark',
-      };
-    });
+    // Locked to pure dark theme
   };
 
   return (
