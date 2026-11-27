@@ -27,6 +27,7 @@ from fastapi.responses import JSONResponse
 
 from api.config import get_settings
 from api.routers import auth, benchmarks, conversations, documents, rag, system, vectors
+from clients.gemini_client import GeminiClient
 from clients.ollama_client import OllamaClient
 from engine.document_db import DocumentDB
 from engine.vector_db import VectorDB
@@ -43,10 +44,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Application startup / shutdown.
 
     Startup:
-        - Instantiate VectorDB, DocumentDB, OllamaClient.
+        - Instantiate VectorDB, DocumentDB, and the LLM client.
+        - LLM_BACKEND env var selects "gemini" (default, cloud) or "ollama" (local).
         - Seed the 20 demo vectors into VectorDB.
     Shutdown:
-        - (nothing required; indexes are in-memory only for Task 02)
+        - (nothing required; indexes are in-memory only)
     """
     cfg = get_settings()
 
@@ -55,16 +57,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     doc_db = DocumentDB()
 
-    ollama = OllamaClient(
-        host=cfg.ollama_host,
-        port=cfg.ollama_port,
-        embed_model=cfg.ollama_embed_model,
-        gen_model=cfg.ollama_gen_model,
-    )
+    if cfg.llm_backend.lower() == "ollama":
+        llm_client = OllamaClient(
+            host=cfg.ollama_host,
+            port=cfg.ollama_port,
+            embed_model=cfg.ollama_embed_model,
+            gen_model=cfg.ollama_gen_model,
+        )
+    else:
+        # Default: Gemini (cloud, free tier)
+        llm_client = GeminiClient(
+            api_key=cfg.gemini_api_key,
+            embed_model=cfg.gemini_embed_model,
+            gen_model=cfg.gemini_gen_model,
+        )
 
-    app.state.vector_db  = vdb
+    app.state.vector_db   = vdb
     app.state.document_db = doc_db
-    app.state.ollama      = ollama
+    app.state.ollama      = llm_client  # kept as "ollama" key for DI compatibility
 
     yield
     # nothing to tear down (all in-memory)
