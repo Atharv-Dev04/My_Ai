@@ -5,7 +5,15 @@ All tuneable values are read from environment variables so secrets
 never appear in source code. A ``.env`` file is supported via
 ``python-dotenv`` if installed; otherwise os.environ is used directly.
 
+LLM Backend selection (LLM_BACKEND env var):
+    "gemini"  — Use Google Gemini API (cloud, free tier).  Requires GEMINI_API_KEY.
+    "ollama"  — Use local Ollama (default for local dev).  Requires Ollama running.
+
 Variables (with defaults):
+    LLM_BACKEND          gemini
+    GEMINI_API_KEY       (required when LLM_BACKEND=gemini)
+    GEMINI_EMBED_MODEL   text-embedding-004
+    GEMINI_GEN_MODEL     gemini-1.5-flash
     OLLAMA_HOST          127.0.0.1
     OLLAMA_PORT          11434
     OLLAMA_EMBED_MODEL   nomic-embed-text
@@ -22,7 +30,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # ── Ollama ───────────────────────────────────────────────────────────
+    # ── LLM backend selector ─────────────────────────────────────────────
+    llm_backend: str = "gemini"   # "gemini" | "ollama"
+
+    # ── Gemini API ───────────────────────────────────────────────────────
+    gemini_api_key: str = ""
+    gemini_embed_model: str = "text-embedding-004"
+    gemini_gen_model: str = "gemini-1.5-flash"
+
+    # ── Ollama (local dev fallback) ───────────────────────────────────────
     ollama_host: str = "127.0.0.1"
     ollama_port: int = 11434
     ollama_embed_model: str = "nomic-embed-text"

@@ -1,0 +1,30 @@
+services:
+  # VectorMind FastAPI Backend
+  - type: web
+    name: vectormind-api
+    runtime: docker
+    dockerfilePath: ./VectorMind/Dockerfile
+    dockerContext: ./VectorMind
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_BACKEND
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false          # set manually in Render dashboard
+      - key: GEMINI_EMBED_MODEL
+        value: text-embedding-004
+      - key: GEMINI_GEN_MODEL
+        value: gemini-1.5-flash
+      - key: DATABASE_URL
+        value: sqlite:///./vectormind.db
+      - key: JWT_SECRET
+        sync: false          # set manually in Render dashboard
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: CORS_ORIGINS
+        sync: false          # set manually after frontend is deployed
+      - key: ENVIRONMENT
+        value: production
