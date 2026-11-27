@@ -1,64 +1,68 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Sliders,
-  Server,
-  Trash2,
-  Check,
-  AlertTriangle,
-  RotateCcw,
+  User,
   SlidersHorizontal,
-  Compass,
+  Server,
   Shield,
+  Check,
+  RotateCcw,
+  Trash2,
+  AlertTriangle,
+  Save,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { usePreferences } from '../context/usePreferences';
-import { Button } from '../components/common/Button';
+import { useAuth } from '../context/auth-context';
 import { getSystemStatus, type StatusResponse } from '../api/client';
+import { Link } from 'react-router-dom';
 
 export const SettingsPage: React.FC = () => {
   const { preferences, updatePreferences, resetPreferences } = usePreferences();
+  const { user, logout } = useAuth();
 
-  // Local draft state to enable explicit Save / Cancel workflow
+  // Local draft state for preferences
   const [draft, setDraft] = useState(preferences);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [systemStatus, setSystemStatus] = useState<StatusResponse | null>(null);
+  const [hasPrefChanges, setHasPrefChanges] = useState(false);
+  const [prefSaveSuccess, setPrefSaveSuccess] = useState(false);
 
-  // Destructive action confirmation modal
+  // Profile editing state
+  const [fullName, setFullName] = useState(user?.full_name || '');
+  const [bio, setBio] = useState(() => localStorage.getItem('vectormind_user_bio') || 'AI Researcher & Knowledge Explorer');
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+
+  const [systemStatus, setSystemStatus] = useState<StatusResponse | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const [prevPreferences, setPrevPreferences] = useState(preferences);
-  if (prevPreferences !== preferences) {
-    setPrevPreferences(preferences);
-    setDraft(preferences);
-    setHasChanges(false);
-  }
+  useEffect(() => {
+    if (user?.full_name) {
+      setFullName(user.full_name);
+    }
+  }, [user]);
 
   useEffect(() => {
     getSystemStatus().then(setSystemStatus).catch(() => null);
   }, []);
 
-  const handleChange = <K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) => {
+  const handlePrefChange = <K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) => {
     const next = { ...draft, [key]: value };
     setDraft(next);
-    setHasChanges(JSON.stringify(next) !== JSON.stringify(preferences));
+    setHasPrefChanges(JSON.stringify(next) !== JSON.stringify(preferences));
   };
 
-  const handleSave = () => {
+  const handleSavePreferences = () => {
     updatePreferences(draft);
-    setHasChanges(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
+    setHasPrefChanges(false);
+    setPrefSaveSuccess(true);
+    setTimeout(() => setPrefSaveSuccess(false), 2500);
   };
 
-  const handleCancel = () => {
-    setDraft(preferences);
-    setHasChanges(false);
-  };
-
-  const handleResetDefaults = () => {
-    resetPreferences();
-    setDraft(preferences);
-    setHasChanges(false);
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('vectormind_user_bio', bio);
+    localStorage.setItem('vectormind_user_name', fullName);
+    setProfileSaveSuccess(true);
+    setTimeout(() => setProfileSaveSuccess(false), 2500);
   };
 
   const handleClearLocalCache = () => {
@@ -72,11 +76,12 @@ export const SettingsPage: React.FC = () => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '1.75rem',
+        gap: '2rem',
         maxWidth: '56rem',
         margin: '0 auto',
         width: '100%',
-        paddingBottom: '3rem',
+        padding: '1rem 0 4rem 0',
+        color: '#ffffff',
       }}
     >
       {/* ── Page Header ──────────────────────────────────────────────── */}
@@ -87,465 +92,282 @@ export const SettingsPage: React.FC = () => {
           alignItems: 'flex-start',
           flexWrap: 'wrap',
           gap: '1rem',
+          paddingBottom: '1.25rem',
+          borderBottom: '1px solid #262626',
         }}
       >
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--accent)',
-                backgroundColor: 'var(--accent-light)',
-                padding: '0.2rem 0.55rem',
-                borderRadius: '9999px',
-                border: '1px solid rgba(56, 189, 248, 0.2)',
-              }}
-            >
-              <SlidersHorizontal size={12} />
-              System Preferences
-            </span>
-          </div>
           <h1
             style={{
-              fontSize: '1.875rem',
+              fontSize: '1.75rem',
               fontWeight: 700,
               letterSpacing: '-0.025em',
-              margin: '0 0 0.25rem 0',
-              color: 'var(--text-primary)',
+              margin: '0 0 0.35rem 0',
+              color: '#ffffff',
             }}
           >
-            Preferences & Settings
+            Settings & Profile
           </h1>
-          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            Configure client theme, vector retrieval hyperparameters, and inspect read-only runtime parameters.
+          <p style={{ margin: 0, fontSize: '0.875rem', color: '#a3a3a3' }}>
+            Manage your personal profile, vector retrieval parameters, and AI model settings.
           </p>
         </div>
+      </div>
 
-        {/* Global Save / Cancel action bar */}
-        {hasChanges && (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <Button variant="ghost" size="sm" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleSave} leftIcon={<Check size={14} />}>
-              Save Changes
-            </Button>
+      {/* ── Section 1: User Profile & Account ───────────────────────────── */}
+      <div
+        style={{
+          padding: '1.75rem',
+          backgroundColor: '#0d0d0d',
+          border: '1px solid #262626',
+          borderRadius: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1.5rem' }}>
+          <User size={20} color="#ffffff" />
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0, color: '#ffffff' }}>
+            Profile Information
+          </h2>
+        </div>
+
+        {profileSaveSuccess && (
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              backgroundColor: '#1f1f1f',
+              border: '1px solid #404040',
+              color: '#ffffff',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <Check size={16} /> Profile information updated successfully.
           </div>
         )}
-      </div>
 
-      {/* Restrained success notification */}
-      {saveSuccess && (
-        <div
-          role="status"
-          style={{
-            padding: '0.75rem 1.15rem',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--success-bg)',
-            border: '1px solid rgba(45, 212, 191, 0.3)',
-            color: 'var(--success)',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <Check size={16} /> Preferences successfully updated and saved to local storage.
-        </div>
-      )}
+        <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#d4d4d4', marginBottom: '0.35rem' }}>
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Your Name"
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  backgroundColor: '#171717',
+                  border: '1px solid #262626',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = '#737373')}
+                onBlur={(e) => (e.target.style.borderColor = '#262626')}
+              />
+            </div>
 
-      {/* ── Section 1: Appearance & UI ─────────────────────────────────── */}
-      <div
-        className="solid-panel"
-        style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-          <Sliders size={18} color="var(--accent)" />
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
-            Interface Appearance & Density
-          </h2>
-        </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#d4d4d4', marginBottom: '0.35rem' }}>
+                Email Address
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="email"
+                  value={user?.email || 'guest@vectormind.local'}
+                  disabled
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    backgroundColor: '#121212',
+                    border: '1px solid #262626',
+                    borderRadius: '8px',
+                    color: '#737373',
+                    fontSize: '0.875rem',
+                    cursor: 'not-allowed',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Theme Variations: 4 Visual Cards matching screenshot */}
           <div>
-            <div style={{ marginBottom: '0.85rem' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                Theme Variations
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                Choose the look that fits you
-              </div>
-            </div>
-
-            <div
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#d4d4d4', marginBottom: '0.35rem' }}>
+              Bio / Role Description
+            </label>
+            <input
+              type="text"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="e.g. AI Researcher, Systems Engineer"
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                gap: '1rem',
+                width: '100%',
+                padding: '0.65rem 0.85rem',
+                backgroundColor: '#171717',
+                border: '1px solid #262626',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '0.875rem',
+                outline: 'none',
               }}
-            >
-              {/* Option 1: Light Minimal */}
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Select Light Minimal theme"
-                onClick={() => handleChange('theme', 'light')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleChange('theme', 'light');
-                  }
-                }}
-                style={{
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem',
-                }}
-              >
-                <div
-                  style={{
-                    height: '110px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: draft.theme === 'light' ? '2px solid var(--accent)' : '1px solid var(--border-subtle)',
-                    boxShadow: draft.theme === 'light' ? '0 0 0 2px var(--accent-light)' : 'none',
-                    backgroundColor: '#f4f7fa',
-                    padding: '0.75rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    transition: 'all var(--transition-fast)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
-                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#1769aa' }} />
-                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: '#eaf0f5' }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d8e1e8' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d8e1e8' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d8e1e8' }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Light Minimal</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clean and elegant</div>
-                </div>
-              </div>
-
-              {/* Option 2: Dark Professional */}
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Select Dark Professional theme"
-                onClick={() => handleChange('theme', 'dark')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleChange('theme', 'dark');
-                  }
-                }}
-                style={{
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem',
-                }}
-              >
-                <div
-                  style={{
-                    height: '110px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: draft.theme === 'dark' ? '2px solid #159be8' : '1px solid var(--border-subtle)',
-                    boxShadow: draft.theme === 'dark' ? '0 0 0 2px rgba(21, 155, 232, 0.25)' : 'none',
-                    backgroundColor: '#071116',
-                    padding: '0.75rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    transition: 'all var(--transition-fast)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
-                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#159be8' }} />
-                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: '#142630' }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#101d24', border: '1px solid #263944' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#101d24', border: '1px solid #263944' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#101d24', border: '1px solid #263944' }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Dark Professional</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Focused and modern</div>
-                </div>
-              </div>
-
-              {/* Option 3: Glass Subtle */}
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Select Glass Subtle theme"
-                onClick={() => handleChange('theme', 'glass')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleChange('theme', 'glass');
-                  }
-                }}
-                style={{
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem',
-                }}
-              >
-                <div
-                  style={{
-                    height: '110px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: draft.theme === 'glass' ? '2px solid #55bdeb' : '1px solid var(--border-subtle)',
-                    boxShadow: draft.theme === 'glass' ? '0 0 0 2px rgba(85, 189, 235, 0.25)' : 'none',
-                    background: 'linear-gradient(135deg, #101c25 0%, #172833 100%)',
-                    padding: '0.75rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    transition: 'all var(--transition-fast)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
-                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#55bdeb' }} />
-                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: 'rgba(205, 225, 238, 0.2)' }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: 'rgba(23, 40, 51, 0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(205, 225, 238, 0.2)' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: 'rgba(23, 40, 51, 0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(205, 225, 238, 0.2)' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: 'rgba(23, 40, 51, 0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(205, 225, 238, 0.2)' }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Glass Subtle</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Translucent and layered</div>
-                </div>
-              </div>
-
-              {/* Option 4: Warm Neutral */}
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Select Warm Neutral theme"
-                onClick={() => handleChange('theme', 'warm')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleChange('theme', 'warm');
-                  }
-                }}
-                style={{
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem',
-                }}
-              >
-                <div
-                  style={{
-                    height: '110px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: draft.theme === 'warm' ? '2px solid #355c68' : '1px solid var(--border-subtle)',
-                    boxShadow: draft.theme === 'warm' ? '0 0 0 2px rgba(53, 92, 104, 0.25)' : 'none',
-                    backgroundColor: '#f4efe7',
-                    padding: '0.75rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    transition: 'all var(--transition-fast)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
-                    <div style={{ width: '28px', height: '14px', borderRadius: '3px', backgroundColor: '#355c68' }} />
-                    <div style={{ width: '60px', height: '14px', borderRadius: '3px', backgroundColor: '#eae1d5' }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#fffcf6', border: '1px solid #d9cebf' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#fffcf6', border: '1px solid #d9cebf' }} />
-                    <div style={{ width: '45px', height: '35px', borderRadius: '4px', backgroundColor: '#fffcf6', border: '1px solid #d9cebf' }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Warm Neutral</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Soft and refined</div>
-                </div>
-              </div>
-            </div>
+              onFocus={(e) => (e.target.style.borderColor = '#737373')}
+              onBlur={(e) => (e.target.style.borderColor = '#262626')}
+            />
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
-
-          {/* Table / Layout Density */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Information Density
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                Controls row height and padding across Document Library tables and telemetry cards.
-              </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ fontSize: '0.8125rem', color: '#737373' }}>
+              Account status:{' '}
+              <strong style={{ color: user ? '#ffffff' : '#a3a3a3' }}>
+                {user ? `Active (${user.email})` : 'Guest Mode (Local session)'}
+              </strong>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={logout}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.55rem 1rem',
+                    borderRadius: '8px',
+                    border: '1px solid #333333',
+                    backgroundColor: '#171717',
+                    color: '#ffffff',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <LogOut size={14} />
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.55rem 1rem',
+                    borderRadius: '8px',
+                    border: '1px solid #333333',
+                    backgroundColor: '#171717',
+                    color: '#ffffff',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                  }}
+                >
+                  <LogIn size={14} />
+                  Sign In / Register
+                </Link>
+              )}
+
               <button
-                type="button"
-                onClick={() => handleChange('density', 'comfortable')}
+                type="submit"
                 style={{
-                  padding: '0.45rem 0.95rem',
-                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.55rem 1.25rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#ffffff',
+                  color: '#000000',
                   fontSize: '0.8125rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  border: `1px solid ${draft.density === 'comfortable' ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                  backgroundColor: draft.density === 'comfortable' ? 'var(--accent-light)' : 'var(--bg-canvas)',
-                  color: draft.density === 'comfortable' ? 'var(--accent)' : 'var(--text-secondary)',
                 }}
               >
-                Comfortable
-              </button>
-              <button
-                type="button"
-                onClick={() => handleChange('density', 'compact')}
-                style={{
-                  padding: '0.45rem 0.95rem',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: `1px solid ${draft.density === 'compact' ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                  backgroundColor: draft.density === 'compact' ? 'var(--accent-light)' : 'var(--bg-canvas)',
-                  color: draft.density === 'compact' ? 'var(--accent)' : 'var(--text-secondary)',
-                }}
-              >
-                Compact (High Density)
+                <Save size={14} />
+                Save Profile
               </button>
             </div>
           </div>
-        </div>
+        </form>
       </div>
 
-      {/* ── Section 2: Vector Retrieval Hyperparameters ───────────────── */}
+      {/* ── Section 2: AI & Vector Retrieval Preferences ──────────────── */}
       <div
-        className="solid-panel"
         style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)',
+          padding: '1.75rem',
+          backgroundColor: '#0d0d0d',
+          border: '1px solid #262626',
+          borderRadius: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-          <Compass size={18} color="var(--accent)" />
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
-            Vector Retrieval Hyperparameters
-          </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <SlidersHorizontal size={20} color="#ffffff" />
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0, color: '#ffffff' }}>
+              AI Model & Retrieval Settings
+            </h2>
+          </div>
+
+          {hasPrefChanges && (
+            <button
+              onClick={handleSavePreferences}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: '#ffffff',
+                color: '#000000',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <Check size={14} /> Save Preferences
+            </button>
+          )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Default Algorithm */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Primary Index Traversal Algorithm
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                Index structure used during semantic similarity queries.
-              </div>
-            </div>
-
-            <select
-              value={draft.defaultAlgorithm}
-              onChange={(e) => handleChange('defaultAlgorithm', e.target.value as typeof draft.defaultAlgorithm)}
-              style={{
-                padding: '0.45rem 0.85rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border-subtle)',
-                backgroundColor: 'var(--bg-canvas)',
-                color: 'var(--text-primary)',
-                fontSize: '0.8125rem',
-                fontWeight: 500,
-                outline: 'none',
-              }}
-            >
-              <option value="hnsw">HNSW Graph (Hierarchical Navigable Small World)</option>
-              <option value="kdtree">KD-Tree (Exact multidimensional partition)</option>
-              <option value="bruteforce">BruteForce (Exact exhaustive baseline)</option>
-            </select>
+        {prefSaveSuccess && (
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              backgroundColor: '#1f1f1f',
+              border: '1px solid #404040',
+              color: '#ffffff',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <Check size={16} /> Retrieval preferences saved to storage.
           </div>
+        )}
 
-          <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
-
-          {/* Default Metric */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Similarity Distance Metric
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                Mathematical distance formulation across high-dimensional float vectors.
-              </div>
-            </div>
-
-            <select
-              value={draft.defaultMetric}
-              onChange={(e) => handleChange('defaultMetric', e.target.value as typeof draft.defaultMetric)}
-              style={{
-                padding: '0.45rem 0.85rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border-subtle)',
-                backgroundColor: 'var(--bg-canvas)',
-                color: 'var(--text-primary)',
-                fontSize: '0.8125rem',
-                fontWeight: 500,
-                outline: 'none',
-              }}
-            >
-              <option value="cosine">Cosine Distance (Normalized directional alignment)</option>
-              <option value="euclidean">Euclidean L2 (Straight-line spatial distance)</option>
-              <option value="manhattan">Manhattan L1 (City-block sum of absolute differences)</option>
-            </select>
-          </div>
-
-          <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Default Top-K */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Default Candidate Depth (Top-K)
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ffffff' }}>
+                Context Document Depth (Top-K)
               </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                Number of ranked candidate chunks returned per semantic query (1 to 20).
+              <div style={{ fontSize: '0.8125rem', color: '#a3a3a3' }}>
+                Number of relevant custom document chunks provided to the AI per prompt.
               </div>
             </div>
 
@@ -555,131 +377,257 @@ export const SettingsPage: React.FC = () => {
                 min="1"
                 max="20"
                 value={draft.defaultTopK}
-                onChange={(e) => handleChange('defaultTopK', Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 5)))}
+                onChange={(e) => handlePrefChange('defaultTopK', Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 3)))}
                 style={{
                   width: '70px',
-                  padding: '0.4rem 0.5rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-subtle)',
-                  backgroundColor: 'var(--bg-canvas)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.8125rem',
+                  padding: '0.5rem',
+                  borderRadius: '8px',
+                  border: '1px solid #262626',
+                  backgroundColor: '#171717',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
                   fontWeight: 600,
                   textAlign: 'center',
                   outline: 'none',
                 }}
               />
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>chunks</span>
+              <span style={{ fontSize: '0.8125rem', color: '#737373' }}>chunks</span>
             </div>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid #1f1f1f' }} />
+
+          {/* Algorithm */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ffffff' }}>
+                Vector Search Engine Algorithm
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: '#a3a3a3' }}>
+                Underlying index algorithm for retrieving answers from documents.
+              </div>
+            </div>
+
+            <select
+              value={draft.defaultAlgorithm}
+              onChange={(e) => handlePrefChange('defaultAlgorithm', e.target.value as typeof draft.defaultAlgorithm)}
+              style={{
+                padding: '0.5rem 0.85rem',
+                borderRadius: '8px',
+                border: '1px solid #262626',
+                backgroundColor: '#171717',
+                color: '#ffffff',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                outline: 'none',
+              }}
+            >
+              <option value="hnsw">HNSW Graph (High-Speed Approximate)</option>
+              <option value="kdtree">KD-Tree (Spatial Partition)</option>
+              <option value="bruteforce">Brute Force (Exact Linear Scan)</option>
+            </select>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid #1f1f1f' }} />
+
+          {/* Distance Metric */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ffffff' }}>
+                Distance Metric
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: '#a3a3a3' }}>
+                Mathematical formula used to compute semantic chunk similarity.
+              </div>
+            </div>
+
+            <select
+              value={draft.defaultMetric}
+              onChange={(e) => handlePrefChange('defaultMetric', e.target.value as typeof draft.defaultMetric)}
+              style={{
+                padding: '0.5rem 0.85rem',
+                borderRadius: '8px',
+                border: '1px solid #262626',
+                backgroundColor: '#171717',
+                color: '#ffffff',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                outline: 'none',
+              }}
+            >
+              <option value="cosine">Cosine Distance (Recommended)</option>
+              <option value="euclidean">Euclidean L2</option>
+              <option value="manhattan">Manhattan L1</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* ── Section 3: Read-Only System Architecture & Models ─────────── */}
+      {/* ── Section 3: Read-Only System Diagnostics ──────────────────── */}
       <div
-        className="solid-panel"
         style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)',
+          padding: '1.75rem',
+          backgroundColor: '#0d0d0d',
+          border: '1px solid #262626',
+          borderRadius: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-          <Server size={18} color="var(--accent)" />
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
-            Server & Ollama Connectivity (Read-Only)
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1.25rem' }}>
+          <Server size={20} color="#ffffff" />
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0, color: '#ffffff' }}>
+            Ollama & Backend Diagnostics
           </h2>
         </div>
 
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
-          Runtime endpoints and hardware configurations are strictly bound through environment variables (<code>.env</code>) on the backend server.
-        </p>
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          <div style={{ padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>API Base Endpoint</div>
-            <div style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)', fontWeight: 600, marginTop: '0.25rem', color: 'var(--text-primary)' }}>
-              {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}
+          <div style={{ padding: '0.85rem 1rem', borderRadius: '8px', backgroundColor: '#141414', border: '1px solid #262626' }}>
+            <div style={{ fontSize: '0.725rem', color: '#737373', textTransform: 'uppercase', fontWeight: 600 }}>API Status</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem', color: '#ffffff' }}>
+              {systemStatus ? 'Online (FastAPI)' : 'Checking...'}
             </div>
           </div>
 
-          <div style={{ padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Active Embedding Model</div>
-            <div style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)', fontWeight: 600, marginTop: '0.25rem', color: 'var(--accent)' }}>
+          <div style={{ padding: '0.85rem 1rem', borderRadius: '8px', backgroundColor: '#141414', border: '1px solid #262626' }}>
+            <div style={{ fontSize: '0.725rem', color: '#737373', textTransform: 'uppercase', fontWeight: 600 }}>Ollama Embedder</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem', color: '#ffffff' }}>
               {systemStatus?.embed_model || 'nomic-embed-text'}
             </div>
           </div>
 
-          <div style={{ padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Active Generation Model</div>
-            <div style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)', fontWeight: 600, marginTop: '0.25rem', color: 'var(--teal)' }}>
+          <div style={{ padding: '0.85rem 1rem', borderRadius: '8px', backgroundColor: '#141414', border: '1px solid #262626' }}>
+            <div style={{ fontSize: '0.725rem', color: '#737373', textTransform: 'uppercase', fontWeight: 600 }}>Ollama Generator</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem', color: '#ffffff' }}>
               {systemStatus?.gen_model || 'llama3.2'}
+            </div>
+          </div>
+
+          <div style={{ padding: '0.85rem 1rem', borderRadius: '8px', backgroundColor: '#141414', border: '1px solid #262626' }}>
+            <div style={{ fontSize: '0.725rem', color: '#737373', textTransform: 'uppercase', fontWeight: 600 }}>Indexed Document Chunks</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem', color: '#ffffff' }}>
+              {systemStatus?.doc_count ?? 0} Chunks
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Section 4: Preferences Reset & Cache ───────────────────────── */}
+      {/* ── Section 4: Reset & Storage ───────────────────────────────── */}
       <div
-        className="solid-panel"
         style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid rgba(244, 63, 94, 0.25)',
-          borderRadius: 'var(--radius-lg)',
+          padding: '1.75rem',
+          backgroundColor: '#0d0d0d',
+          border: '1px solid #262626',
+          borderRadius: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <Shield size={18} color="var(--rose)" />
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--rose)' }}>
-            Preferences Reset & Storage Management
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem' }}>
+          <Shield size={20} color="#a3a3a3" />
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0, color: '#ffffff' }}>
+            Storage & Cache Reset
           </h2>
         </div>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
-          Restore factory defaults for UI layout density, top-k candidate limits, and vector algorithm configurations stored in browser storage.
+        <p style={{ fontSize: '0.8125rem', color: '#a3a3a3', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+          Reset your locally saved preferences and clear cached conversation history from browser storage.
         </p>
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <Button variant="outline" size="sm" onClick={handleResetDefaults} leftIcon={<RotateCcw size={14} />}>
-            Restore Default Settings
-          </Button>
+          <button
+            type="button"
+            onClick={() => {
+              resetPreferences();
+              setDraft(preferences);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.55rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #333333',
+              backgroundColor: '#171717',
+              color: '#ffffff',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            <RotateCcw size={14} />
+            Reset Defaults
+          </button>
 
-          <Button variant="danger" size="sm" onClick={() => setShowClearConfirm(true)} leftIcon={<Trash2 size={14} />}>
-            Clear Local Preferences
-          </Button>
+          <button
+            type="button"
+            onClick={() => setShowClearConfirm(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.55rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #404040',
+              backgroundColor: '#1a1a1a',
+              color: '#ffffff',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            <Trash2 size={14} />
+            Clear Storage
+          </button>
         </div>
 
-        {/* Confirmation Modal */}
         {showClearConfirm && (
           <div
-            role="alertdialog"
-            aria-modal="true"
             style={{
               marginTop: '1.25rem',
               padding: '1.15rem',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(244, 63, 94, 0.08)',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
+              borderRadius: '8px',
+              backgroundColor: '#171717',
+              border: '1px solid #404040',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.75rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--rose)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff' }}>
               <AlertTriangle size={18} />
-              <strong style={{ fontSize: '0.875rem' }}>Clear all stored preferences?</strong>
+              <strong style={{ fontSize: '0.875rem' }}>Clear all local cache and preferences?</strong>
             </div>
-            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              This will purge all custom theme, density, and retrieval settings from <code>localStorage</code> and reinitialize default values.
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: '#a3a3a3' }}>
+              This will clear your local preferences and restore default values.
             </p>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <Button variant="danger" size="sm" onClick={handleClearLocalCache}>
-                Confirm Purge
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setShowClearConfirm(false)}>
+              <button
+                type="button"
+                onClick={handleClearLocalCache}
+                style={{
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '6px',
+                  backgroundColor: '#ffffff',
+                  color: '#000000',
+                  border: 'none',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Confirm
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                style={{
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '6px',
+                  backgroundColor: '#262626',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.8125rem',
+                  cursor: 'pointer',
+                }}
+              >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         )}
